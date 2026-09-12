@@ -1,5 +1,5 @@
 // ==========================================================================
-// HotTube Watch Page Logic & HLS Engine (watch.js)
+// HotTube Watch Page Logic & HLS/Smart Dual-Engine Player (watch.js)
 // ==========================================================================
 
 const FALLBACK_CATALOG = [
@@ -21,9 +21,11 @@ const FALLBACK_CATALOG = [
 let catalogData = [];
 let currentVideo = null;
 let hlsInstance = null;
+let isEmbedMode = false;
 
 // DOM Elements
 const hlsVideoPlayer = document.getElementById('hlsVideoPlayer');
+const embedVideoPlayer = document.getElementById('embedVideoPlayer');
 const playerLoader = document.getElementById('playerLoader');
 const watchTitle = document.getElementById('watchTitle');
 const watchChannel = document.getElementById('watchChannel');
@@ -32,6 +34,8 @@ const watchDuration = document.getElementById('watchDuration');
 const watchCategory = document.getElementById('watchCategory');
 const recommendedGrid = document.getElementById('recommendedGrid');
 const searchInput = document.getElementById('searchInput');
+const qualityChips = document.getElementById('qualityChips');
+const toggleEmbedBtn = document.getElementById('toggleEmbedBtn');
 
 /**
  * Initialize Watch Page
@@ -73,8 +77,19 @@ async function initWatchPage() {
   watchCategory.innerHTML = `<i class="fa-solid fa-layer-group"></i> Category: ${currentVideo.category || 'Trending'}`;
   hlsVideoPlayer.poster = currentVideo.poster_url || currentVideo.thumbnail_url;
 
-  // Initialize HLS Video Stream
-  loadHlsStream(currentVideo.video_stream_url);
+  // Setup Quality Control buttons
+  setupQualityControls();
+
+  // Setup Embed Switcher
+  if (toggleEmbedBtn) {
+    toggleEmbedBtn.addEventListener('click', () => {
+      isEmbedMode = !isEmbedMode;
+      switchPlayerMode(isEmbedMode);
+    });
+  }
+
+  // Initialize Dual-Engine Video Stream
+  loadSmartVideoStream(currentVideo);
 
   // Render Category Based Recommended Videos
   renderRecommendations(currentVideo);
@@ -90,7 +105,50 @@ async function initWatchPage() {
 }
 
 /**
- * Load HLS Stream via HLS.js
+ * Switch Player UI between Native Video Player and iFrame Embed Player
+ */
+function switchPlayerMode(embed) {
+  isEmbedMode = embed;
+  if (isEmbedMode) {
+    hlsVideoPlayer.pause();
+    hlsVideoPlayer.classList.add('hidden');
+    embedVideoPlayer.classList.remove('hidden');
+    
+    let embedSrc = currentVideo.embed_url || currentVideo.page_url || currentVideo.video_stream_url;
+    if (embedVideoPlayer.src !== embedSrc) {
+      embedVideoPlayer.src = embedSrc;
+    }
+    if (playerLoader) playerLoader.classList.add('hidden');
+  } else {
+    embedVideoPlayer.classList.add('hidden');
+    hlsVideoPlayer.classList.remove('hidden');
+    loadHlsStream(currentVideo.video_stream_url);
+  }
+}
+
+/**
+ * Load Smart Video Stream with automatic Fallback to Embed
+ */
+function loadSmartVideoStream(video) {
+  const streamUrl = video.video_stream_url;
+  
+  // If video explicitly requested embed or doesn't have valid direct stream, use embed
+  if (!streamUrl || isEmbedMode) {
+    switchPlayerMode(true);
+    return;
+  }
+
+  // Attempt direct playback with fallback listener
+  hlsVideoPlayer.onerror = () => {
+    console.warn('Native video player error, switching to iFrame Embed player fallback...');
+    switchPlayerMode(true);
+  };
+
+  loadHlsStream(streamUrl);
+}
+
+/**
+ * Load HLS Stream via HLS.js or Native HTML5 Video
  */
 function loadHlsStream(streamUrl) {
   if (playerLoader) playerLoader.classList.remove('hidden');
@@ -101,24 +159,29 @@ function loadHlsStream(streamUrl) {
   }
 
   if (!streamUrl) {
-    if (playerLoader) playerLoader.classList.add('hidden');
+    switchPlayerMode(true);
     return;
   }
 
-  // If stream URL is direct MP4 video file
+  // Direct MP4 playback
   if (streamUrl.includes('.mp4')) {
     hlsVideoPlayer.src = streamUrl;
-    hlsVideoPlayer.addEventListener('loadeddata', () => {
+    
+    const onLoaded = () => {
       if (playerLoader) playerLoader.classList.add('hidden');
-    });
+      hlsVideoPlayer.removeEventListener('loadeddata', onLoaded);
+    };
+    hlsVideoPlayer.addEventListener('loadeddata', onLoaded);
+    
     hlsVideoPlayer.play().catch(e => {
       if (playerLoader) playerLoader.classList.add('hidden');
-      console.warn('MP4 playback warning:', e.message);
+      console.warn('Direct MP4 playback restricted/failed. Switching to Embed player...', e.message);
+      switchPlayerMode(true);
     });
     return;
   }
 
-  // If stream URL is HLS manifest (.m3u8)
+  // HLS Stream (.m3u8) playback
   if (Hls.isSupported() && streamUrl.includes('.m3u8')) {
     hlsInstance = new Hls({
       enableWorker: true,
@@ -135,8 +198,9 @@ function loadHlsStream(streamUrl) {
 
     hlsInstance.on(Hls.Events.ERROR, (event, data) => {
       if (data.fatal) {
+        console.error('HLS Fatal Error:', data.type);
         if (playerLoader) playerLoader.classList.add('hidden');
-        console.error('HLS Error:', data);
+        switchPlayerMode(true);
       }
     });
 
@@ -148,6 +212,47 @@ function loadHlsStream(streamUrl) {
     });
     if (playerLoader) playerLoader.classList.add('hidden');
   }
+}
+
+/**
+ * Setup Video Quality Control Bar Buttons
+ */
+function setupQualityControls() {
+  if (!qualityChips) return;
+
+  qualityChips.addEventListener('click', (e) => {
+    const btn = e.target.closest('.q-chip');
+    if (!btn) return;
+
+    // Update UI active chip
+    const chips = qualityChips.querySelectorAll('.q-chip');
+    chips.forEach(c => c.classList.remove('active'));
+    btn.classList.add('active');
+
+    const targetHeight = parseInt(btn.dataset.quality, 10);
+
+    if (hlsInstance) {
+      if (targetHeight === -1) {
+        hlsInstance.currentLevel = -1; // Auto adaptive
+      } else {
+        const levels = hlsInstance.levels;
+        let matchedIndex = -1;
+        let minDiff = Infinity;
+
+        levels.forEach((level, idx) => {
+          const diff = Math.abs(level.height - targetHeight);
+          if (diff < minDiff) {
+            minDiff = diff;
+            matchedIndex = idx;
+          }
+        });
+
+        if (matchedIndex !== -1) {
+          hlsInstance.currentLevel = matchedIndex;
+        }
+      }
+    }
+  });
 }
 
 /**

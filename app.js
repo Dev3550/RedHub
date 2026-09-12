@@ -47,6 +47,44 @@ const trendingDots = document.getElementById('trendingDots');
 let trendingVideos = [];
 let currentTrendingIndex = 0;
 let trendingAutoTimer = null;
+let currentHourlySeed = '';
+let current15MinSeed = '';
+
+/**
+ * Deterministic Hourly & 15-Minute Seed Generators
+ */
+function getHourlySeed() {
+  const d = new Date();
+  return `${d.getUTCFullYear()}-${d.getUTCMonth()}-${d.getUTCDate()}-${d.getUTCHours()}`;
+}
+
+function get15MinSeed() {
+  const d = new Date();
+  const quarter = Math.floor(d.getUTCMinutes() / 15);
+  return `${d.getUTCFullYear()}-${d.getUTCMonth()}-${d.getUTCDate()}-${d.getUTCHours()}-${quarter}`;
+}
+
+/**
+ * Seeded Pseudo-Random Array Shuffler
+ */
+function seededShuffle(array, seedStr) {
+  let hash = 0;
+  for (let i = 0; i < seedStr.length; i++) {
+    hash = (hash << 5) - hash + seedStr.charCodeAt(i);
+    hash |= 0;
+  }
+  const rng = function() {
+    const x = Math.sin(hash++) * 10000;
+    return x - Math.floor(x);
+  };
+
+  const result = [...array];
+  for (let i = result.length - 1; i > 0; i--) {
+    const j = Math.floor(rng() * (i + 1));
+    [result[i], result[j]] = [result[j], result[i]];
+  }
+  return result;
+}
 
 /**
  * Update items per page according to responsive screen width
@@ -60,7 +98,7 @@ function updateItemsPerPage() {
 }
 
 /**
- * Initialize App Data & Responsive Rules
+ * Initialize App Data, Hourly/15-Min Shufflers & Responsive Rules
  */
 async function initApp() {
   updateItemsPerPage();
@@ -86,12 +124,16 @@ async function initApp() {
     title: cleanHotTubeBranding(v.title)
   }));
 
+  // Store active seeds
+  currentHourlySeed = getHourlySeed();
+  current15MinSeed = get15MinSeed();
+
+  // 1-Hour Homepage Auto-Shuffle
+  videosData = seededShuffle(videosData, currentHourlySeed);
   filteredVideos = [...videosData];
 
-  // Get Top 6 videos sorted by views for Trending Section
-  trendingVideos = [...videosData]
-    .sort((a, b) => (b.views || 0) - (a.views || 0))
-    .slice(0, 6);
+  // 15-Minute Trending Carousel Auto-Shuffle with 8 diverse category videos
+  updateTrendingSelection();
 
   // Check search query parameter in URL
   const urlParams = new URLSearchParams(window.location.search);
@@ -104,6 +146,66 @@ async function initApp() {
   renderTrendingCarousel();
   renderCurrentPage();
   setupEventListeners();
+
+  // Schedule auto-shuffle check every minute
+  setInterval(checkAutoShuffleTimers, 60000);
+}
+
+/**
+ * Update Trending Video Selection (8 videos from diverse categories)
+ */
+function updateTrendingSelection() {
+  const shuffledForTrending = seededShuffle([...videosData], current15MinSeed);
+  const categoryMap = new Map();
+  trendingVideos = [];
+
+  for (const vid of shuffledForTrending) {
+    const cat = vid.category || 'General';
+    if (!categoryMap.has(cat) || trendingVideos.length >= 6) {
+      categoryMap.set(cat, true);
+      trendingVideos.push(vid);
+    }
+    if (trendingVideos.length >= 8) break;
+  }
+
+  if (trendingVideos.length < 8) {
+    trendingVideos = shuffledForTrending.slice(0, 8);
+  }
+}
+
+/**
+ * Check if 1-Hour or 15-Min timer interval has rotated
+ */
+function checkAutoShuffleTimers() {
+  const newHourlySeed = getHourlySeed();
+  const new15MinSeed = get15MinSeed();
+
+  let shouldRenderGrid = false;
+  let shouldRenderTrending = false;
+
+  if (newHourlySeed !== currentHourlySeed) {
+    currentHourlySeed = newHourlySeed;
+    videosData = seededShuffle(videosData, currentHourlySeed);
+    if (!searchInput || !searchInput.value.trim()) {
+      filteredVideos = [...videosData];
+      shouldRenderGrid = true;
+    }
+  }
+
+  if (new15MinSeed !== current15MinSeed) {
+    current15MinSeed = new15MinSeed;
+    updateTrendingSelection();
+    shouldRenderTrending = true;
+  }
+
+  if (shouldRenderTrending) {
+    currentTrendingIndex = 0;
+    renderTrendingCarousel();
+  }
+
+  if (shouldRenderGrid) {
+    renderCurrentPage();
+  }
 }
 
 /**
@@ -206,7 +308,7 @@ function goToPage(page) {
 }
 
 /**
- * Render 5-6 Auto-Scrolling Trending Videos Carousel
+ * Render 8 Auto-Scrolling Trending Videos Carousel
  */
 function renderTrendingCarousel() {
   if (!trendingCarouselTrack || !trendingVideos || trendingVideos.length === 0) return;
