@@ -31,8 +31,8 @@
       </div>
 
       <div class="nav-actions">
-        <button class="action-btn" title="Trending"><i class="fa-solid fa-fire"></i></button>
-        <button class="action-btn" title="Categories"><i class="fa-solid fa-layer-group"></i></button>
+        <button class="action-btn" id="navTrendingBtn" title="Trending"><i class="fa-solid fa-fire"></i></button>
+        <button class="action-btn" id="navCategoriesBtn" title="Explore Categories"><i class="fa-solid fa-layer-group"></i></button>
         <div class="user-avatar">
           <img src="https://ui-avatars.com/api/?name=HotTube&background=FF1E4B&color=fff" alt="HotTube Avatar">
         </div>
@@ -49,11 +49,6 @@
         <div class="trending-title-wrap">
           <span class="trending-badge"><i class="fa-solid fa-fire-flame-curved"></i> TRENDING NOW</span>
           <h2 class="trending-heading"><i class="fa-solid fa-bolt"></i> Top Streamed Videos on HotTube</h2>
-        </div>
-        <div class="carousel-controls">
-          <button class="carousel-btn" id="trendingPrevBtn" title="Previous Video"><i class="fa-solid fa-chevron-left"></i></button>
-          <button class="carousel-btn" id="trendingPauseBtn" title="Pause Auto-scroll"><i class="fa-solid fa-pause"></i></button>
-          <button class="carousel-btn" id="trendingNextBtn" title="Next Video"><i class="fa-solid fa-chevron-right"></i></button>
         </div>
       </div>
 
@@ -151,6 +146,24 @@
       <h3>No videos found on HotTube matching your search</h3>
       <p>Try searching with different keywords or clear your search query.</p>
       <button class="btn-reset" id="resetSearchBtn">Reset Search</button>
+    </div>
+
+    <!-- Categories Modal / Visual Overlay -->
+    <div class="categories-modal-overlay hidden" id="categoriesModal">
+      <div class="categories-modal-card">
+        <div class="categories-modal-header">
+          <div class="modal-title-wrap">
+            <i class="fa-solid fa-layer-group modal-title-icon"></i>
+            <h2>Explore HotTube Video Categories</h2>
+          </div>
+          <button class="modal-close-btn" id="closeCategoriesModalBtn" title="Close"><i class="fa-solid fa-xmark"></i></button>
+        </div>
+        <div class="categories-modal-body">
+          <div class="visual-categories-grid" id="visualCategoriesGrid">
+            <!-- Visual Category Cards with thumbnails dynamically injected via app.js -->
+          </div>
+        </div>
+      </div>
     </div>
 
   </main>

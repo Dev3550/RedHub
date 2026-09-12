@@ -43,14 +43,10 @@ const pageNumbers = document.getElementById('pageNumbers');
 // Trending Carousel Elements & State
 const trendingCarouselTrack = document.getElementById('trendingCarouselTrack');
 const trendingDots = document.getElementById('trendingDots');
-const trendingPrevBtn = document.getElementById('trendingPrevBtn');
-const trendingNextBtn = document.getElementById('trendingNextBtn');
-const trendingPauseBtn = document.getElementById('trendingPauseBtn');
 
 let trendingVideos = [];
 let currentTrendingIndex = 0;
 let trendingAutoTimer = null;
-let isTrendingPaused = false;
 
 /**
  * Update items per page according to responsive screen width
@@ -268,7 +264,7 @@ function renderTrendingCarousel() {
       stopTrendingAutoPlay();
     });
     carouselWrapper.addEventListener('mouseleave', () => {
-      if (!isTrendingPaused) startTrendingAutoPlay();
+      startTrendingAutoPlay();
     });
   }
 }
@@ -310,12 +306,6 @@ function nextTrendingSlide() {
   updateTrendingSlidePosition();
 }
 
-function prevTrendingSlide() {
-  const maxIndex = trendingVideos.length - 1;
-  currentTrendingIndex = currentTrendingIndex <= 0 ? maxIndex : currentTrendingIndex - 1;
-  updateTrendingSlidePosition();
-}
-
 function startTrendingAutoPlay() {
   stopTrendingAutoPlay();
   trendingAutoTimer = setInterval(() => {
@@ -328,6 +318,110 @@ function stopTrendingAutoPlay() {
     clearInterval(trendingAutoTimer);
     trendingAutoTimer = null;
   }
+}
+
+/**
+ * Render Visual Category Cards inside Categories Modal
+ */
+function renderVisualCategoriesModal() {
+  const visualGrid = document.getElementById('visualCategoriesGrid');
+  if (!visualGrid) return;
+  visualGrid.innerHTML = '';
+
+  // Get all unique category chips defined in DOM
+  const chips = Array.from(document.querySelectorAll('.chip'))
+    .map(chip => chip.getAttribute('data-category'))
+    .filter(cat => cat && cat !== 'all' && cat !== 'trending');
+
+  chips.forEach(categoryName => {
+    const catLower = categoryName.toLowerCase();
+
+    // Filter videos matching this category
+    const matchingVideos = videosData.filter(v => {
+      if (v.category && v.category.toLowerCase() === catLower) return true;
+      if (Array.isArray(v.categories) && v.categories.some(c => c.toLowerCase() === catLower)) return true;
+      if (v.title) {
+        const titleLower = v.title.toLowerCase();
+        if (catLower === 'mom' && (titleLower.includes('mom') || titleLower.includes('bhabhi') || titleLower.includes('stepmom'))) return true;
+        if (titleLower.includes(catLower)) return true;
+      }
+      return false;
+    });
+
+    const count = matchingVideos.length;
+    // Get thumbnail from first matching video or fallback
+    const sampleThumb = matchingVideos.length > 0
+      ? (matchingVideos[0].thumbnail_url || matchingVideos[0].poster_url)
+      : 'https://images.unsplash.com/photo-1536440136628-849c177e76a1?w=500&q=80';
+
+    const card = document.createElement('div');
+    card.className = 'visual-category-card';
+    card.innerHTML = `
+      <img src="${sampleThumb}" alt="${escapeHtml(categoryName)}" loading="lazy" onerror="this.src='https://images.unsplash.com/photo-1536440136628-849c177e76a1?w=500&q=80'">
+      <div class="visual-category-overlay">
+        <h4 class="visual-category-title">${escapeHtml(categoryName)}</h4>
+        <span class="visual-category-count">${count.toLocaleString()} Videos</span>
+      </div>
+    `;
+
+    card.onclick = () => {
+      selectCategoryByName(categoryName);
+      closeCategoriesModal();
+    };
+
+    visualGrid.appendChild(card);
+  });
+}
+
+function selectCategoryByName(catName) {
+  const catLower = catName.toLowerCase();
+
+  // Set active chip in bar
+  document.querySelectorAll('.chip').forEach(c => {
+    if (c.getAttribute('data-category').toLowerCase() === catLower) {
+      c.classList.add('active');
+    } else {
+      c.classList.remove('active');
+    }
+  });
+
+  if (catName === 'all') {
+    filteredVideos = [...videosData];
+  } else if (catName === 'trending') {
+    filteredVideos = [...videosData].sort((a, b) => (b.views || 0) - (a.views || 0));
+  } else {
+    filteredVideos = videosData.filter(v => {
+      if (v.category && v.category.toLowerCase() === catLower) return true;
+      if (Array.isArray(v.categories) && v.categories.some(c => c.toLowerCase() === catLower)) return true;
+      if (v.title) {
+        const titleLower = v.title.toLowerCase();
+        if (catLower === 'mom' && (titleLower.includes('mom') || titleLower.includes('bhabhi') || titleLower.includes('stepmom'))) return true;
+        if (titleLower.includes(catLower)) return true;
+      }
+      return false;
+    });
+  }
+
+  currentPage = 1;
+  renderCurrentPage();
+  if (catalogHeader) {
+    catalogHeader.scrollIntoView({ behavior: 'smooth', block: 'start' });
+  }
+}
+
+function openCategoriesModal() {
+  const modal = document.getElementById('categoriesModal');
+  if (!modal) return;
+  renderVisualCategoriesModal();
+  modal.classList.remove('hidden');
+  document.body.style.overflow = 'hidden';
+}
+
+function closeCategoriesModal() {
+  const modal = document.getElementById('categoriesModal');
+  if (!modal) return;
+  modal.classList.add('hidden');
+  document.body.style.overflow = '';
 }
 
 /**
@@ -358,32 +452,34 @@ function handleSearch() {
  * Event Listeners
  */
 function setupEventListeners() {
-  // Trending Carousel Controls
-  if (trendingPrevBtn) {
-    trendingPrevBtn.addEventListener('click', () => {
-      prevTrendingSlide();
-      if (!isTrendingPaused) startTrendingAutoPlay();
+  // Navbar Action Buttons
+  const navTrendingBtn = document.getElementById('navTrendingBtn');
+  const navCategoriesBtn = document.getElementById('navCategoriesBtn');
+  const closeCategoriesModalBtn = document.getElementById('closeCategoriesModalBtn');
+  const categoriesModal = document.getElementById('categoriesModal');
+
+  if (navTrendingBtn) {
+    navTrendingBtn.addEventListener('click', () => {
+      selectCategoryByName('trending');
     });
   }
 
-  if (trendingNextBtn) {
-    trendingNextBtn.addEventListener('click', () => {
-      nextTrendingSlide();
-      if (!isTrendingPaused) startTrendingAutoPlay();
+  if (navCategoriesBtn) {
+    navCategoriesBtn.addEventListener('click', () => {
+      openCategoriesModal();
     });
   }
 
-  if (trendingPauseBtn) {
-    trendingPauseBtn.addEventListener('click', () => {
-      isTrendingPaused = !isTrendingPaused;
-      if (isTrendingPaused) {
-        stopTrendingAutoPlay();
-        trendingPauseBtn.innerHTML = '<i class="fa-solid fa-play"></i>';
-        trendingPauseBtn.title = "Resume Auto-scroll";
-      } else {
-        startTrendingAutoPlay();
-        trendingPauseBtn.innerHTML = '<i class="fa-solid fa-pause"></i>';
-        trendingPauseBtn.title = "Pause Auto-scroll";
+  if (closeCategoriesModalBtn) {
+    closeCategoriesModalBtn.addEventListener('click', () => {
+      closeCategoriesModal();
+    });
+  }
+
+  if (categoriesModal) {
+    categoriesModal.addEventListener('click', (e) => {
+      if (e.target === categoriesModal) {
+        closeCategoriesModal();
       }
     });
   }
@@ -434,33 +530,10 @@ function setupEventListeners() {
   // Category chip filtering
   document.querySelectorAll('.chip').forEach(chip => {
     chip.addEventListener('click', (e) => {
-      document.querySelectorAll('.chip').forEach(c => c.classList.remove('active'));
       const targetChip = e.target.closest('.chip');
       if (!targetChip) return;
-      targetChip.classList.add('active');
-
       const cat = targetChip.getAttribute('data-category');
-
-      if (cat === 'all') {
-        filteredVideos = [...videosData];
-      } else if (cat === 'trending') {
-        filteredVideos = [...videosData].sort((a, b) => (b.views || 0) - (a.views || 0));
-      } else {
-        const catLower = cat.toLowerCase();
-        filteredVideos = videosData.filter(v => {
-          if (v.category && v.category.toLowerCase() === catLower) return true;
-          if (Array.isArray(v.categories) && v.categories.some(c => c.toLowerCase() === catLower)) return true;
-          if (v.title) {
-            const titleLower = v.title.toLowerCase();
-            if (catLower === 'mom' && (titleLower.includes('mom') || titleLower.includes('bhabhi') || titleLower.includes('stepmom'))) return true;
-            if (titleLower.includes(catLower)) return true;
-          }
-          return false;
-        });
-      }
-
-      currentPage = 1;
-      renderCurrentPage();
+      selectCategoryByName(cat);
     });
   });
 }
