@@ -1,5 +1,5 @@
 // ==========================================================================
-// HotTube Watch Page Logic & Native HLS/Smart Player (watch.js)
+// HotTube Watch Page Logic & Single Native HLS/HTML5 Player (watch.js)
 // ==========================================================================
 
 const FALLBACK_CATALOG = [
@@ -21,11 +21,9 @@ const FALLBACK_CATALOG = [
 let catalogData = [];
 let currentVideo = null;
 let hlsInstance = null;
-let isEmbedMode = false;
 
 // DOM Elements
 const hlsVideoPlayer = document.getElementById('hlsVideoPlayer');
-const embedVideoPlayer = document.getElementById('embedVideoPlayer');
 const playerLoader = document.getElementById('playerLoader');
 const watchTitle = document.getElementById('watchTitle');
 const watchChannel = document.getElementById('watchChannel');
@@ -35,7 +33,6 @@ const watchCategory = document.getElementById('watchCategory');
 const recommendedGrid = document.getElementById('recommendedGrid');
 const searchInput = document.getElementById('searchInput');
 const qualityChips = document.getElementById('qualityChips');
-const toggleEmbedBtn = document.getElementById('toggleEmbedBtn');
 
 /**
  * Initialize Watch Page
@@ -77,19 +74,11 @@ async function initWatchPage() {
   watchCategory.innerHTML = `<i class="fa-solid fa-layer-group"></i> Category: ${currentVideo.category || 'Trending'}`;
   hlsVideoPlayer.poster = currentVideo.poster_url || currentVideo.thumbnail_url;
 
-  // Setup Quality Control buttons
+  // Setup Quality Controls
   setupQualityControls();
 
-  // Setup Embed Switcher
-  if (toggleEmbedBtn) {
-    toggleEmbedBtn.addEventListener('click', () => {
-      isEmbedMode = !isEmbedMode;
-      switchPlayerMode(isEmbedMode);
-    });
-  }
-
-  // Initialize Video Stream
-  loadSmartVideoStream(currentVideo);
+  // Initialize Native HLS / Video Stream
+  loadHlsStream(currentVideo.video_stream_url);
 
   // Render Category Based Recommended Videos
   renderRecommendations(currentVideo);
@@ -105,58 +94,6 @@ async function initWatchPage() {
 }
 
 /**
- * Switch Player UI between Native Video Player and iFrame Embed Player
- */
-function switchPlayerMode(embed) {
-  isEmbedMode = embed;
-  
-  if (isEmbedMode) {
-    if (hlsVideoPlayer) {
-      hlsVideoPlayer.pause();
-      hlsVideoPlayer.classList.add('hidden');
-    }
-    if (embedVideoPlayer) {
-      embedVideoPlayer.classList.remove('hidden');
-      
-      let embedSrc = currentVideo.embed_url || currentVideo.page_url || currentVideo.video_stream_url;
-      if (embedVideoPlayer.src !== embedSrc) {
-        embedVideoPlayer.src = embedSrc;
-      }
-    }
-    if (playerLoader) playerLoader.classList.add('hidden');
-  } else {
-    if (embedVideoPlayer) {
-      embedVideoPlayer.src = 'about:blank';
-      embedVideoPlayer.classList.add('hidden');
-    }
-    if (hlsVideoPlayer) {
-      hlsVideoPlayer.classList.remove('hidden');
-    }
-    loadHlsStream(currentVideo.video_stream_url);
-  }
-}
-
-/**
- * Load Smart Video Stream - Direct Native Playback Primary
- */
-function loadSmartVideoStream(video) {
-  const streamUrl = video.video_stream_url;
-  
-  if (!streamUrl || isEmbedMode) {
-    switchPlayerMode(true);
-    return;
-  }
-
-  // Native player error listener: switch to iframe embed only on hard error
-  hlsVideoPlayer.onerror = () => {
-    console.warn('Native video player error, switching to Embed player...');
-    switchPlayerMode(true);
-  };
-
-  loadHlsStream(streamUrl);
-}
-
-/**
  * Load HLS Stream via HLS.js or Native HTML5 Video
  */
 function loadHlsStream(streamUrl) {
@@ -168,7 +105,7 @@ function loadHlsStream(streamUrl) {
   }
 
   if (!streamUrl) {
-    switchPlayerMode(true);
+    if (playerLoader) playerLoader.classList.add('hidden');
     return;
   }
 
@@ -186,7 +123,7 @@ function loadHlsStream(streamUrl) {
       if (playerLoader) playerLoader.classList.add('hidden');
     }).catch(e => {
       if (playerLoader) playerLoader.classList.add('hidden');
-      console.warn('Direct MP4 playback catch:', e.message);
+      console.warn('Native MP4 play catch:', e.message);
     });
     return;
   }
@@ -196,14 +133,19 @@ function loadHlsStream(streamUrl) {
     hlsInstance = new Hls({
       enableWorker: true,
       lowLatencyMode: true,
-      backBufferLength: 90
+      backBufferLength: 90,
+      capLevelToPlayerSize: false
     });
 
     hlsInstance.loadSource(streamUrl);
     hlsInstance.attachMedia(hlsVideoPlayer);
 
-    hlsInstance.on(Hls.Events.MANIFEST_PARSED, () => {
+    hlsInstance.on(Hls.Events.MANIFEST_PARSED, (event, data) => {
       if (playerLoader) playerLoader.classList.add('hidden');
+      
+      console.log('HLS Manifest Parsed! Available Quality Levels:', data.levels);
+
+      // Start playing
       hlsVideoPlayer.play().catch(e => console.warn('Autoplay prevented:', e.message));
     });
 
@@ -211,7 +153,6 @@ function loadHlsStream(streamUrl) {
       if (data.fatal) {
         console.error('HLS Fatal Error:', data.type);
         if (playerLoader) playerLoader.classList.add('hidden');
-        switchPlayerMode(true);
       }
     });
 
@@ -226,7 +167,7 @@ function loadHlsStream(streamUrl) {
 }
 
 /**
- * Setup Video Quality Control Bar Buttons
+ * Setup Interactive Quality Control Bar for HLS Streams (1080p, 720p, 480p, 360p, Auto)
  */
 function setupQualityControls() {
   if (!qualityChips) return;
@@ -241,29 +182,46 @@ function setupQualityControls() {
     btn.classList.add('active');
 
     const targetHeight = parseInt(btn.dataset.quality, 10);
+    setHlsQuality(targetHeight);
+  });
+}
 
-    if (hlsInstance) {
-      if (targetHeight === -1) {
-        hlsInstance.currentLevel = -1; // Auto adaptive
-      } else {
-        const levels = hlsInstance.levels;
-        let matchedIndex = -1;
-        let minDiff = Infinity;
+/**
+ * Force HLS Quality Level Switch in Hls.js Engine
+ */
+function setHlsQuality(targetHeight) {
+  if (!hlsInstance) {
+    console.warn('Quality switch requested, but HLS instance is not active for this video format.');
+    return;
+  }
 
-        levels.forEach((level, idx) => {
-          const diff = Math.abs(level.height - targetHeight);
-          if (diff < minDiff) {
-            minDiff = diff;
-            matchedIndex = idx;
-          }
-        });
+  if (targetHeight === -1) {
+    hlsInstance.currentLevel = -1; // Auto adaptive
+    hlsInstance.loadLevel = -1;
+    console.log('⚡ HLS Quality set to Auto (Adaptive)');
+    return;
+  }
 
-        if (matchedIndex !== -1) {
-          hlsInstance.currentLevel = matchedIndex;
-        }
-      }
+  const levels = hlsInstance.levels;
+  if (!levels || levels.length === 0) return;
+
+  let matchedIndex = -1;
+  let minDiff = Infinity;
+
+  levels.forEach((level, idx) => {
+    const diff = Math.abs(level.height - targetHeight);
+    if (diff < minDiff) {
+      minDiff = diff;
+      matchedIndex = idx;
     }
   });
+
+  if (matchedIndex !== -1) {
+    hlsInstance.currentLevel = matchedIndex;
+    hlsInstance.nextLevel = matchedIndex;
+    hlsInstance.loadLevel = matchedIndex;
+    console.log(`🎬 HLS Quality switched to Level ${matchedIndex} (${levels[matchedIndex].height}p @ ${Math.round(levels[matchedIndex].bitrate / 1000)} kbps)`);
+  }
 }
 
 /**
