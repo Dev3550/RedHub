@@ -143,6 +143,11 @@ async function fetchFreshStreamUrl(pageUrl) {
     if (m3u8Match) {
       return m3u8Match[1].replace(/\\/g, '');
     }
+
+    const mp4Match = html.match(/(https?:\\?\/\\?\/[^"' ]+\.mp4[^"' ]*)/i);
+    if (mp4Match) {
+      return mp4Match[1].replace(/\\/g, '');
+    }
   } catch (err) {
     console.warn('Failed to fetch fresh stream URL:', err.message);
   }
