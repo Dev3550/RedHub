@@ -1,16 +1,15 @@
-// scraper_cluster.js – Multi-Source High-Performance 10-Worker Parallel Cluster Scraper for HotTube (d:\redhub)
+// scraper_cluster.js – Multi-Worker Parallel Cluster Scraper for HotTube (d:\redhub)
+// Dedicated 100% to clean High-Quality xhaccess HLS streams
 
 const fs = require('fs');
 const path = require('path');
 const { fetchHtml, parseCatalogPage, extractStreamDetails, isAdOrTracker } = require('./utils');
-const { fetchFpvHtml, parseFpvCatalogPage, extractFpvStreamDetails } = require('./fpv_utils');
-const { fetchSexvidHtml, parseSexvidCatalogPage, extractSexvidStreamDetails } = require('./sexvid_utils');
 
 const WORKER_COUNT = 10;
 const OUTPUT_FILE = path.resolve(__dirname, 'sample_videos.json');
 const CHECKPOINT_FILE = path.resolve(__dirname, 'checkpoint_urls.json');
 
-// Target Categories across xhaccess and freepornvideo.sex
+// Target Categories across xhaccess
 const XH_CATEGORIES = [
   { name: 'All', url: 'https://xhaccess.com/search/xhamsters' },
   { name: 'Indian', url: 'https://xhaccess.com/search/indian' },
@@ -19,89 +18,26 @@ const XH_CATEGORIES = [
   { name: 'Japanese', url: 'https://xhaccess.com/search/japanese' },
   { name: 'Pakistani', url: 'https://xhaccess.com/search/pakistani' },
   { name: 'Russian', url: 'https://xhaccess.com/search/russian' },
-  { name: 'American', url: 'https://xhaccess.com/search/american' }
-];
-
-const FPV_CATEGORIES = [
-  { name: 'All', url: 'https://www.freepornvideo.sex/' },
-  { name: 'Indian', url: 'https://www.freepornvideo.sex/categories/indian/' },
-  { name: 'Indian', url: 'https://www.freepornvideo.sex/categories/indian/2/' },
-  { name: 'Anal', url: 'https://www.freepornvideo.sex/categories/anal/' },
-  { name: 'Anal', url: 'https://www.freepornvideo.sex/categories/anal/2/' },
-  { name: 'Latina', url: 'https://www.freepornvideo.sex/categories/latina/' },
-  { name: 'Interracial', url: 'https://www.freepornvideo.sex/categories/interracial/' },
-  { name: 'Amateur', url: 'https://www.freepornvideo.sex/categories/amateur/' },
-  { name: 'Blowjob', url: 'https://www.freepornvideo.sex/categories/blowjob/' },
-  { name: 'Big Tits', url: 'https://www.freepornvideo.sex/categories/big-tits/' },
-  { name: 'Small Tits', url: 'https://www.freepornvideo.sex/categories/small-tits/' },
-  { name: 'Asian', url: 'https://www.freepornvideo.sex/categories/asian/' },
-  { name: 'Mature', url: 'https://www.freepornvideo.sex/categories/mature/' },
-  { name: 'Cumshot', url: 'https://www.freepornvideo.sex/categories/cumshot/' },
-  { name: 'Creampie', url: 'https://www.freepornvideo.sex/categories/creampie/' },
-  { name: 'Pussy Licking', url: 'https://www.freepornvideo.sex/categories/pussy-licking/' },
-  { name: 'POV', url: 'https://www.freepornvideo.sex/categories/pov/' },
-  { name: 'Group', url: 'https://www.freepornvideo.sex/categories/group/' },
-  { name: 'Cum in Mouth', url: 'https://www.freepornvideo.sex/categories/cum-in-mouth/' },
-  { name: 'Hardcore', url: 'https://www.freepornvideo.sex/categories/hardcore/' },
-  { name: 'Teen', url: 'https://www.freepornvideo.sex/categories/teen/' },
-  { name: 'MILF', url: 'https://www.freepornvideo.sex/categories/milf/' },
-  { name: 'MILF', url: 'https://www.freepornvideo.sex/categories/milf/2/' },
-  { name: 'Threesome', url: 'https://www.freepornvideo.sex/categories/threesome/' },
-  { name: 'Solo', url: 'https://www.freepornvideo.sex/categories/solo/' },
-  { name: 'Redhead', url: 'https://www.freepornvideo.sex/categories/redhead/' },
-  { name: 'Shaved Pussy', url: 'https://www.freepornvideo.sex/categories/shaved-pussy/' },
-  { name: 'Brunette', url: 'https://www.freepornvideo.sex/categories/brunette/' },
-  { name: 'Masturbation', url: 'https://www.freepornvideo.sex/categories/masturbation/' },
-  { name: 'Lesbian', url: 'https://www.freepornvideo.sex/categories/lesbian/' },
-  { name: 'Beautiful', url: 'https://www.freepornvideo.sex/categories/beuatiful/' },
-  { name: 'Blonde', url: 'https://www.freepornvideo.sex/categories/blonde/' },
-  { name: 'Rimming', url: 'https://www.freepornvideo.sex/categories/rimming/' },
-  { name: 'Old & Young', url: 'https://www.freepornvideo.sex/categories/old-and-young/' },
-  { name: 'Striptease', url: 'https://www.freepornvideo.sex/categories/striptease/' },
-  { name: 'Webcam', url: 'https://www.freepornvideo.sex/categories/webcam/' },
-  { name: 'Hairy Pussy', url: 'https://www.freepornvideo.sex/categories/hairy-pussy/' },
-  { name: 'Cum on Face', url: 'https://www.freepornvideo.sex/categories/cum-on-face/' },
-  { name: 'Outdoors', url: 'https://www.freepornvideo.sex/categories/outdoors/' },
-  { name: 'Pee', url: 'https://www.freepornvideo.sex/categories/pee/' },
-  { name: 'Stockings', url: 'https://www.freepornvideo.sex/categories/stockings/' },
-  { name: 'Fisting', url: 'https://www.freepornvideo.sex/categories/fisting/' },
-  { name: 'Dildo', url: 'https://www.freepornvideo.sex/categories/dildo/' },
-  { name: 'Toys', url: 'https://www.freepornvideo.sex/categories/toys/' },
-  { name: 'Oil & Cream', url: 'https://www.freepornvideo.sex/categories/oil-and-cream/' }
-];
-
-const SEXVID_CATEGORIES = [
-  { name: 'All', url: 'https://www.sexvid.xxx/s/most-favourited/xxx+videos+in+x/' },
-  { name: 'Indian', url: 'https://www.sexvid.xxx/c/indian/' },
-  { name: 'Anal', url: 'https://www.sexvid.xxx/c/anal/' },
-  { name: 'Latina', url: 'https://www.sexvid.xxx/c/latina/' },
-  { name: 'Interracial', url: 'https://www.sexvid.xxx/c/interracial/' },
-  { name: 'Amateur', url: 'https://www.sexvid.xxx/c/amateur/' },
-  { name: 'Blowjob', url: 'https://www.sexvid.xxx/c/blowjobs/' },
-  { name: 'Big Tits', url: 'https://www.sexvid.xxx/c/tits/' },
-  { name: 'Small Tits', url: 'https://www.sexvid.xxx/c/small-tits/' },
-  { name: 'Asian', url: 'https://www.sexvid.xxx/c/asian/' },
-  { name: 'Mature', url: 'https://www.sexvid.xxx/c/matures/' },
-  { name: 'Creampie', url: 'https://www.sexvid.xxx/c/creampie/' },
-  { name: 'POV', url: 'https://www.sexvid.xxx/c/pov/' },
-  { name: 'Group', url: 'https://www.sexvid.xxx/c/group-sex/' },
-  { name: 'Hardcore', url: 'https://www.sexvid.xxx/c/hardcore/' },
-  { name: 'Teen', url: 'https://www.sexvid.xxx/c/teens/' },
-  { name: 'MILF', url: 'https://www.sexvid.xxx/c/milfs/' },
-  { name: 'Threesome', url: 'https://www.sexvid.xxx/c/threesomes/' },
-  { name: 'Solo', url: 'https://www.sexvid.xxx/c/solo/' },
-  { name: 'Redhead', url: 'https://www.sexvid.xxx/c/redheads/' },
-  { name: 'Brunette', url: 'https://www.sexvid.xxx/c/brunettes/' },
-  { name: 'Masturbation', url: 'https://www.sexvid.xxx/c/masturbation/' },
-  { name: 'Lesbian', url: 'https://www.sexvid.xxx/c/lesbians/' },
-  { name: 'Foot Fetish', url: 'https://www.sexvid.xxx/c/foot-fetish/' },
-  { name: 'Massage', url: 'https://www.sexvid.xxx/c/massage/' },
-  { name: 'Pornstars', url: 'https://www.sexvid.xxx/c/pornstars/' },
-  { name: 'Squirting', url: 'https://www.sexvid.xxx/c/squirting/' },
-  { name: 'Stockings', url: 'https://www.sexvid.xxx/c/stockings/' },
-  { name: 'Webcam', url: 'https://www.sexvid.xxx/c/webcams/' },
-  { name: 'Homemade', url: 'https://www.sexvid.xxx/c/homemade/' },
-  { name: 'Handjobs', url: 'https://www.sexvid.xxx/c/handjobs/' }
+  { name: 'American', url: 'https://xhaccess.com/search/american' },
+  { name: 'Anal', url: 'https://xhaccess.com/search/anal' },
+  { name: 'Latina', url: 'https://xhaccess.com/search/latina' },
+  { name: 'Interracial', url: 'https://xhaccess.com/search/interracial' },
+  { name: 'Amateur', url: 'https://xhaccess.com/search/amateur' },
+  { name: 'Blowjob', url: 'https://xhaccess.com/search/blowjob' },
+  { name: 'Big Tits', url: 'https://xhaccess.com/search/big-tits' },
+  { name: 'Asian', url: 'https://xhaccess.com/search/asian' },
+  { name: 'Mature', url: 'https://xhaccess.com/search/mature' },
+  { name: 'Creampie', url: 'https://xhaccess.com/search/creampie' },
+  { name: 'POV', url: 'https://xhaccess.com/search/pov' },
+  { name: 'Group', url: 'https://xhaccess.com/search/group' },
+  { name: 'Hardcore', url: 'https://xhaccess.com/search/hardcore' },
+  { name: 'Teen', url: 'https://xhaccess.com/search/teen' },
+  { name: 'MILF', url: 'https://xhaccess.com/search/milf' },
+  { name: 'Threesome', url: 'https://xhaccess.com/search/threesome' },
+  { name: 'Solo', url: 'https://xhaccess.com/search/solo' },
+  { name: 'Lesbian', url: 'https://xhaccess.com/search/lesbian' },
+  { name: 'Blonde', url: 'https://xhaccess.com/search/blonde' },
+  { name: 'Brunette', url: 'https://xhaccess.com/search/brunette' }
 ];
 
 let catalog = [];
@@ -115,17 +51,22 @@ if (fs.existsSync(CHECKPOINT_FILE)) {
 }
 
 function saveProgress() {
+  // Always filter out any non-xhaccess entries
+  catalog = catalog.filter(v => {
+    const url = (v.page_url || '') + (v.video_stream_url || '');
+    return !url.includes('sexvid') && !url.includes('freepornvideo');
+  }).map((v, i) => ({ ...v, index: i + 1 }));
+
   fs.writeFileSync(OUTPUT_FILE, JSON.stringify(catalog, null, 2), 'utf-8');
   fs.writeFileSync(CHECKPOINT_FILE, JSON.stringify(Array.from(scrapedUrls), null, 2), 'utf-8');
 }
 
 /**
- * Discover all raw video items across all target sites & categories
+ * Discover all raw video items across xhaccess categories
  */
 async function discoverAllVideoItems() {
   const allItemsMap = new Map();
 
-  // 1. Scan xhaccess categories
   for (const catObj of XH_CATEGORIES) {
     console.log(`\n🔎 [xhaccess] Scanning category [${catObj.name}]: ${catObj.url}`);
     const html = await fetchHtml(catObj.url);
@@ -144,45 +85,7 @@ async function discoverAllVideoItems() {
     await new Promise(r => setTimeout(r, 150));
   }
 
-  // 2. Scan freepornvideo.sex categories
-  for (const catObj of FPV_CATEGORIES) {
-    console.log(`\n🔎 [freepornvideo.sex] Scanning category [${catObj.name}]: ${catObj.url}`);
-    const html = await fetchFpvHtml(catObj.url);
-    if (!html) continue;
-
-    const items = parseFpvCatalogPage(html);
-    console.log(`   ➜ Discovered ${items.length} raw video items`);
-
-    for (const item of items) {
-      if (item.page_url && !isAdOrTracker(item.page_url)) {
-        if (!allItemsMap.has(item.page_url)) {
-          allItemsMap.set(item.page_url, { ...item, category: catObj.name, source: 'fpv' });
-        }
-      }
-    }
-    await new Promise(r => setTimeout(r, 150));
-  }
-
-  // 3. Scan sexvid.xxx categories
-  for (const catObj of SEXVID_CATEGORIES) {
-    console.log(`\n🔎 [sexvid.xxx] Scanning category [${catObj.name}]: ${catObj.url}`);
-    const html = await fetchSexvidHtml(catObj.url);
-    if (!html) continue;
-
-    const items = parseSexvidCatalogPage(html);
-    console.log(`   ➜ Discovered ${items.length} raw video items`);
-
-    for (const item of items) {
-      if (item.page_url && !isAdOrTracker(item.page_url)) {
-        if (!allItemsMap.has(item.page_url)) {
-          allItemsMap.set(item.page_url, { ...item, category: catObj.name, source: 'sexvid' });
-        }
-      }
-    }
-    await new Promise(r => setTimeout(r, 150));
-  }
-
-  console.log(`\n✅ Total unique video URLs collected for queue across all sources: ${allItemsMap.size}`);
+  console.log(`\n✅ Total unique video URLs collected for queue: ${allItemsMap.size}`);
   return Array.from(allItemsMap.values());
 }
 
@@ -195,37 +98,14 @@ async function worker(id, queue) {
     if (!item || !item.page_url || scrapedUrls.has(item.page_url)) continue;
 
     try {
-      console.log(`[Worker ${id}] 📥 Fetching details for [${item.category}] (${item.source}): ${item.title.substring(0, 35)}...`);
+      console.log(`[Worker ${id}] 📥 Fetching HLS details for [${item.category}]: ${item.title.substring(0, 35)}...`);
 
       let mainStreamUrl = item.stream_url || '';
-      let embedUrl = '';
       let posterUrl = item.poster_url || item.thumbnail_url;
-      let categories = [item.category || 'All'];
 
-      if (item.source === 'sexvid') {
-        const details = await extractSexvidStreamDetails(item.page_url);
-        if (details) {
-          if (details.stream_url) mainStreamUrl = details.stream_url;
-          if (details.poster_url) posterUrl = details.poster_url;
-          if (details.categories && details.categories.length > 0) {
-            categories = details.categories;
-          }
-        }
-      } else if (item.source === 'fpv') {
-        const details = await extractFpvStreamDetails(item.page_url);
-        if (details) {
-          if (details.stream_url) mainStreamUrl = details.stream_url;
-          if (details.embed_url) embedUrl = details.embed_url;
-          if (details.poster_url) posterUrl = details.poster_url;
-          if (details.categories && details.categories.length > 0) {
-            categories = details.categories;
-          }
-        }
-      } else {
-        const details = await extractStreamDetails(item.page_url);
-        if (details && details.stream_url) {
-          mainStreamUrl = details.stream_url;
-        }
+      const details = await extractStreamDetails(item.page_url);
+      if (details && details.stream_url) {
+        mainStreamUrl = details.stream_url;
       }
 
       // Format clean title without third-party branding
@@ -237,14 +117,12 @@ async function worker(id, queue) {
         index: catalog.length + 1,
         id: item.id || `vid_${Date.now()}_${Math.random().toString(36).substring(2, 6)}`,
         title: cleanTitle,
-        category: item.category || categories[0] || 'All',
-        categories: categories,
+        category: item.category || 'All',
         duration: item.duration || item.duration_formatted || '10:00',
         thumbnail_url: item.thumbnail_url || posterUrl,
         poster_url: posterUrl || item.thumbnail_url,
         page_url: item.page_url,
         video_stream_url: mainStreamUrl,
-        embed_url: embedUrl,
         views: item.views || Math.floor(Math.random() * 500000) + 50000,
         channel: item.channel || 'HotTube Original'
       };
@@ -270,7 +148,7 @@ async function worker(id, queue) {
  */
 async function runClusterScraper() {
   console.log('==================================================================');
-  console.log('  🚀 HotTube Multi-Source 10-Worker Cluster Scraper');
+  console.log('  🚀 HotTube Dedicated HLS Cluster Scraper (10 Workers)');
   console.log('==================================================================');
 
   const allItems = await discoverAllVideoItems();
@@ -278,6 +156,7 @@ async function runClusterScraper() {
 
   if (queue.length === 0) {
     console.log(' 🎉 All items already scraped – catalog up to date.');
+    saveProgress();
     return;
   }
 
@@ -293,7 +172,7 @@ async function runClusterScraper() {
   saveProgress();
 
   console.log('\n==================================================================');
-  console.log(`✅ Cluster scraping completed - ${catalog.length} items stored in ${OUTPUT_FILE}`);
+  console.log(`✅ Cluster scraping completed - ${catalog.length} HLS items stored in ${OUTPUT_FILE}`);
   console.log('==================================================================');
 }
 
