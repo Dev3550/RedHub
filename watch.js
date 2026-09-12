@@ -1,5 +1,5 @@
 // ==========================================================================
-// HotTube Watch Page Logic & HLS/Smart Dual-Engine Player (watch.js)
+// HotTube Watch Page Logic & Native HLS/Smart Player (watch.js)
 // ==========================================================================
 
 const FALLBACK_CATALOG = [
@@ -22,7 +22,6 @@ let catalogData = [];
 let currentVideo = null;
 let hlsInstance = null;
 let isEmbedMode = false;
-let fallbackWatchdogTimer = null;
 
 // DOM Elements
 const hlsVideoPlayer = document.getElementById('hlsVideoPlayer');
@@ -89,7 +88,7 @@ async function initWatchPage() {
     });
   }
 
-  // Initialize Dual-Engine Video Stream
+  // Initialize Video Stream
   loadSmartVideoStream(currentVideo);
 
   // Render Category Based Recommended Videos
@@ -106,20 +105,9 @@ async function initWatchPage() {
 }
 
 /**
- * Clear Watchdog Timer
- */
-function clearWatchdog() {
-  if (fallbackWatchdogTimer) {
-    clearTimeout(fallbackWatchdogTimer);
-    fallbackWatchdogTimer = null;
-  }
-}
-
-/**
  * Switch Player UI between Native Video Player and iFrame Embed Player
  */
 function switchPlayerMode(embed) {
-  clearWatchdog();
   isEmbedMode = embed;
   
   if (isEmbedMode) {
@@ -137,34 +125,31 @@ function switchPlayerMode(embed) {
     }
     if (playerLoader) playerLoader.classList.add('hidden');
   } else {
-    if (embedVideoPlayer) embedVideoPlayer.classList.add('hidden');
-    if (hlsVideoPlayer) hlsVideoPlayer.classList.remove('hidden');
+    if (embedVideoPlayer) {
+      embedVideoPlayer.src = 'about:blank';
+      embedVideoPlayer.classList.add('hidden');
+    }
+    if (hlsVideoPlayer) {
+      hlsVideoPlayer.classList.remove('hidden');
+    }
     loadHlsStream(currentVideo.video_stream_url);
   }
 }
 
 /**
- * Load Smart Video Stream with automatic Fallback to Embed
+ * Load Smart Video Stream - Direct Native Playback Primary
  */
 function loadSmartVideoStream(video) {
-  clearWatchdog();
   const streamUrl = video.video_stream_url;
   
-  // If video explicitly requested embed or doesn't have valid direct stream, use embed
   if (!streamUrl || isEmbedMode) {
     switchPlayerMode(true);
     return;
   }
 
-  // Set 2.5-second watchdog timer: If native video load hangs due to CORS/hotlink block, auto-switch to Embed
-  fallbackWatchdogTimer = setTimeout(() => {
-    console.warn('Native video watchdog timeout triggered (CDN CORS/hotlink block detected). Instant switch to Embed Player.');
-    switchPlayerMode(true);
-  }, 2500);
-
-  // Native player error listener
+  // Native player error listener: switch to iframe embed only on hard error
   hlsVideoPlayer.onerror = () => {
-    console.warn('Native video player error, switching to iFrame Embed player fallback...');
+    console.warn('Native video player error, switching to Embed player...');
     switchPlayerMode(true);
   };
 
@@ -187,39 +172,37 @@ function loadHlsStream(streamUrl) {
     return;
   }
 
-  // Direct MP4 playback
+  // Direct MP4 playback in Native HTML5 Video Player
   if (streamUrl.includes('.mp4')) {
     hlsVideoPlayer.src = streamUrl;
     
     const onLoaded = () => {
-      clearWatchdog();
       if (playerLoader) playerLoader.classList.add('hidden');
       hlsVideoPlayer.removeEventListener('loadeddata', onLoaded);
     };
     hlsVideoPlayer.addEventListener('loadeddata', onLoaded);
     
     hlsVideoPlayer.play().then(() => {
-      clearWatchdog();
+      if (playerLoader) playerLoader.classList.add('hidden');
     }).catch(e => {
       if (playerLoader) playerLoader.classList.add('hidden');
-      console.warn('Direct MP4 playback restricted/failed. Switching to Embed player...', e.message);
-      switchPlayerMode(true);
+      console.warn('Direct MP4 playback catch:', e.message);
     });
     return;
   }
 
-  // HLS Stream (.m3u8) playback
+  // HLS Stream (.m3u8) playback via HLS.js
   if (Hls.isSupported() && streamUrl.includes('.m3u8')) {
     hlsInstance = new Hls({
       enableWorker: true,
       lowLatencyMode: true,
+      backBufferLength: 90
     });
 
     hlsInstance.loadSource(streamUrl);
     hlsInstance.attachMedia(hlsVideoPlayer);
 
     hlsInstance.on(Hls.Events.MANIFEST_PARSED, () => {
-      clearWatchdog();
       if (playerLoader) playerLoader.classList.add('hidden');
       hlsVideoPlayer.play().catch(e => console.warn('Autoplay prevented:', e.message));
     });
@@ -235,7 +218,6 @@ function loadHlsStream(streamUrl) {
   } else {
     hlsVideoPlayer.src = streamUrl;
     hlsVideoPlayer.addEventListener('loadedmetadata', () => {
-      clearWatchdog();
       if (playerLoader) playerLoader.classList.add('hidden');
       hlsVideoPlayer.play().catch(_ => {});
     });
