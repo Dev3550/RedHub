@@ -4,6 +4,7 @@ const fs = require('fs');
 const path = require('path');
 const { fetchHtml, parseCatalogPage, extractStreamDetails, isAdOrTracker } = require('./utils');
 const { fetchFpvHtml, parseFpvCatalogPage, extractFpvStreamDetails } = require('./fpv_utils');
+const { fetchSexvidHtml, parseSexvidCatalogPage, extractSexvidStreamDetails } = require('./sexvid_utils');
 
 const WORKER_COUNT = 10;
 const OUTPUT_FILE = path.resolve(__dirname, 'sample_videos.json');
@@ -69,6 +70,40 @@ const FPV_CATEGORIES = [
   { name: 'Oil & Cream', url: 'https://www.freepornvideo.sex/categories/oil-and-cream/' }
 ];
 
+const SEXVID_CATEGORIES = [
+  { name: 'All', url: 'https://www.sexvid.xxx/s/most-favourited/xxx+videos+in+x/' },
+  { name: 'Indian', url: 'https://www.sexvid.xxx/c/indian/' },
+  { name: 'Anal', url: 'https://www.sexvid.xxx/c/anal/' },
+  { name: 'Latina', url: 'https://www.sexvid.xxx/c/latina/' },
+  { name: 'Interracial', url: 'https://www.sexvid.xxx/c/interracial/' },
+  { name: 'Amateur', url: 'https://www.sexvid.xxx/c/amateur/' },
+  { name: 'Blowjob', url: 'https://www.sexvid.xxx/c/blowjobs/' },
+  { name: 'Big Tits', url: 'https://www.sexvid.xxx/c/tits/' },
+  { name: 'Small Tits', url: 'https://www.sexvid.xxx/c/small-tits/' },
+  { name: 'Asian', url: 'https://www.sexvid.xxx/c/asian/' },
+  { name: 'Mature', url: 'https://www.sexvid.xxx/c/matures/' },
+  { name: 'Creampie', url: 'https://www.sexvid.xxx/c/creampie/' },
+  { name: 'POV', url: 'https://www.sexvid.xxx/c/pov/' },
+  { name: 'Group', url: 'https://www.sexvid.xxx/c/group-sex/' },
+  { name: 'Hardcore', url: 'https://www.sexvid.xxx/c/hardcore/' },
+  { name: 'Teen', url: 'https://www.sexvid.xxx/c/teens/' },
+  { name: 'MILF', url: 'https://www.sexvid.xxx/c/milfs/' },
+  { name: 'Threesome', url: 'https://www.sexvid.xxx/c/threesomes/' },
+  { name: 'Solo', url: 'https://www.sexvid.xxx/c/solo/' },
+  { name: 'Redhead', url: 'https://www.sexvid.xxx/c/redheads/' },
+  { name: 'Brunette', url: 'https://www.sexvid.xxx/c/brunettes/' },
+  { name: 'Masturbation', url: 'https://www.sexvid.xxx/c/masturbation/' },
+  { name: 'Lesbian', url: 'https://www.sexvid.xxx/c/lesbians/' },
+  { name: 'Foot Fetish', url: 'https://www.sexvid.xxx/c/foot-fetish/' },
+  { name: 'Massage', url: 'https://www.sexvid.xxx/c/massage/' },
+  { name: 'Pornstars', url: 'https://www.sexvid.xxx/c/pornstars/' },
+  { name: 'Squirting', url: 'https://www.sexvid.xxx/c/squirting/' },
+  { name: 'Stockings', url: 'https://www.sexvid.xxx/c/stockings/' },
+  { name: 'Webcam', url: 'https://www.sexvid.xxx/c/webcams/' },
+  { name: 'Homemade', url: 'https://www.sexvid.xxx/c/homemade/' },
+  { name: 'Handjobs', url: 'https://www.sexvid.xxx/c/handjobs/' }
+];
+
 let catalog = [];
 if (fs.existsSync(OUTPUT_FILE)) {
   try { catalog = JSON.parse(fs.readFileSync(OUTPUT_FILE, 'utf-8')); } catch (_) {}
@@ -128,6 +163,25 @@ async function discoverAllVideoItems() {
     await new Promise(r => setTimeout(r, 150));
   }
 
+  // 3. Scan sexvid.xxx categories
+  for (const catObj of SEXVID_CATEGORIES) {
+    console.log(`\n🔎 [sexvid.xxx] Scanning category [${catObj.name}]: ${catObj.url}`);
+    const html = await fetchSexvidHtml(catObj.url);
+    if (!html) continue;
+
+    const items = parseSexvidCatalogPage(html);
+    console.log(`   ➜ Discovered ${items.length} raw video items`);
+
+    for (const item of items) {
+      if (item.page_url && !isAdOrTracker(item.page_url)) {
+        if (!allItemsMap.has(item.page_url)) {
+          allItemsMap.set(item.page_url, { ...item, category: catObj.name, source: 'sexvid' });
+        }
+      }
+    }
+    await new Promise(r => setTimeout(r, 150));
+  }
+
   console.log(`\n✅ Total unique video URLs collected for queue across all sources: ${allItemsMap.size}`);
   return Array.from(allItemsMap.values());
 }
@@ -148,7 +202,16 @@ async function worker(id, queue) {
       let posterUrl = item.poster_url || item.thumbnail_url;
       let categories = [item.category || 'All'];
 
-      if (item.source === 'fpv') {
+      if (item.source === 'sexvid') {
+        const details = await extractSexvidStreamDetails(item.page_url);
+        if (details) {
+          if (details.stream_url) mainStreamUrl = details.stream_url;
+          if (details.poster_url) posterUrl = details.poster_url;
+          if (details.categories && details.categories.length > 0) {
+            categories = details.categories;
+          }
+        }
+      } else if (item.source === 'fpv') {
         const details = await extractFpvStreamDetails(item.page_url);
         if (details) {
           if (details.stream_url) mainStreamUrl = details.stream_url;
@@ -167,7 +230,7 @@ async function worker(id, queue) {
 
       // Format clean title without third-party branding
       const cleanTitle = item.title
-        .replace(/(xHamster|xHamsters|xNXX|Pornhub|XVideos|FreePornVideo)/gi, 'HotTube')
+        .replace(/(xHamster|xHamsters|xNXX|Pornhub|XVideos|FreePornVideo|SexVid|SexVid\.xxx)/gi, 'HotTube')
         .trim();
 
       const cleanItem = {
