@@ -2,8 +2,8 @@ name: HotTube Auto Scraper Cron
 
 on:
   schedule:
-    # Run every 30 minutes automatically to refresh stream tokens
-    - cron: '*/30 * * * *'
+    # Run every 20 minutes automatically to refresh stream tokens
+    - cron: '*/20 * * * *'
   push:
     # Trigger cloud scraping on every push to main
     branches:
@@ -27,6 +27,9 @@ jobs:
 
       - name: Install Dependencies
         run: npm ci || npm install
+
+      - name: Refresh Expired Stream Tokens
+        run: node refresh_catalog.js
 
       - name: Run 10-Worker Cluster Scraper
         run: node scraper_cluster.js

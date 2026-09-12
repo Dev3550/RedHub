@@ -53,8 +53,8 @@ if (fs.existsSync(CHECKPOINT_FILE)) {
 function saveProgress() {
   // Always filter out any non-xhaccess entries
   catalog = catalog.filter(v => {
-    const url = (v.page_url || '') + (v.video_stream_url || '');
-    return !url.includes('sexvid') && !url.includes('freepornvideo');
+    const pageUrl = v.page_url || '';
+    return pageUrl.includes('xhaccess.com');
   }).map((v, i) => ({ ...v, index: i + 1 }));
 
   fs.writeFileSync(OUTPUT_FILE, JSON.stringify(catalog, null, 2), 'utf-8');

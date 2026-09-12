@@ -1,5 +1,5 @@
 // ==========================================================================
-// HotTube Watch Page Logic & Ultra-Smooth Mobile Native HLS Player (watch.js)
+// HotTube Watch Page Logic & Fail-Safe Smart Native Player (watch.js)
 // ==========================================================================
 
 const FALLBACK_CATALOG = [
@@ -21,10 +21,11 @@ const FALLBACK_CATALOG = [
 let catalogData = [];
 let currentVideo = null;
 let hlsInstance = null;
-let isRefreshingToken = false;
+let isEmbedMode = false;
 
 // DOM Elements
 const hlsVideoPlayer = document.getElementById('hlsVideoPlayer');
+const embedVideoPlayer = document.getElementById('embedVideoPlayer');
 const playerLoader = document.getElementById('playerLoader');
 const watchTitle = document.getElementById('watchTitle');
 const watchChannel = document.getElementById('watchChannel');
@@ -78,7 +79,7 @@ async function initWatchPage() {
   setupQualityControls();
 
   // Initialize Native HLS / Video Stream
-  loadHlsStream(currentVideo.video_stream_url);
+  loadSmartVideoStream(currentVideo);
 
   // Render Category Based Recommended Videos
   renderRecommendations(currentVideo);
@@ -94,64 +95,55 @@ async function initWatchPage() {
 }
 
 /**
- * Self-Healing: Refresh Expired Stream Token from Source Page
+ * Switch Player UI between Native Video Player and Sandboxed iFrame Embed Player
  */
-async function refreshStreamAndReload() {
-  if (isRefreshingToken || !currentVideo || !currentVideo.page_url) return;
-  isRefreshingToken = true;
-
-  if (playerLoader) {
-    playerLoader.classList.remove('hidden');
-    const span = playerLoader.querySelector('span');
-    if (span) span.textContent = 'Refreshing Stream Token...';
-  }
-
-  console.log('🔄 Expired stream token detected. Refreshing token on-demand from source page...');
-  const freshUrl = await fetchFreshStreamUrl(currentVideo.page_url);
-
-  if (freshUrl && freshUrl !== currentVideo.video_stream_url) {
-    console.log('✅ Fresh working stream token obtained:', freshUrl);
-    currentVideo.video_stream_url = freshUrl;
-    isRefreshingToken = false;
-    loadHlsStream(freshUrl);
-  } else {
-    isRefreshingToken = false;
+function switchPlayerMode(embed) {
+  isEmbedMode = embed;
+  
+  if (isEmbedMode) {
+    if (hlsVideoPlayer) {
+      hlsVideoPlayer.pause();
+      hlsVideoPlayer.classList.add('hidden');
+    }
+    if (embedVideoPlayer) {
+      embedVideoPlayer.classList.remove('hidden');
+      
+      let embedSrc = currentVideo.embed_url || currentVideo.page_url || currentVideo.video_stream_url;
+      if (embedVideoPlayer.src !== embedSrc) {
+        embedVideoPlayer.src = embedSrc;
+      }
+    }
     if (playerLoader) playerLoader.classList.add('hidden');
-    console.warn('Could not refresh stream token.');
+  } else {
+    if (embedVideoPlayer) {
+      embedVideoPlayer.src = 'about:blank';
+      embedVideoPlayer.classList.add('hidden');
+    }
+    if (hlsVideoPlayer) {
+      hlsVideoPlayer.classList.remove('hidden');
+    }
+    loadHlsStream(currentVideo.video_stream_url);
   }
 }
 
 /**
- * Fetch fresh stream URL from video detail page
+ * Load Smart Video Stream with Sandboxed Embed Fallback on Fatal Error
  */
-async function fetchFreshStreamUrl(pageUrl) {
-  try {
-    const res = await fetch(pageUrl);
-    if (!res.ok) return null;
-    const html = await res.text();
-
-    const initialsMatch = html.match(/window\.initials\s*=\s*(\{.*?\});\s*<\/script>/s);
-    if (initialsMatch && initialsMatch[1]) {
-      const parsed = JSON.parse(initialsMatch[1]);
-      const videoModel = parsed?.videoModel || parsed?.video || {};
-      if (videoModel.sources && videoModel.sources.hls) {
-        return videoModel.sources.hls;
-      }
-    }
-
-    const m3u8Match = html.match(/(https?:\\?\/\\?\/[^"' ]+\.m3u8[^"' ]*)/i);
-    if (m3u8Match) {
-      return m3u8Match[1].replace(/\\/g, '');
-    }
-
-    const mp4Match = html.match(/(https?:\\?\/\\?\/[^"' ]+\.mp4[^"' ]*)/i);
-    if (mp4Match) {
-      return mp4Match[1].replace(/\\/g, '');
-    }
-  } catch (err) {
-    console.warn('Failed to fetch fresh stream URL:', err.message);
+function loadSmartVideoStream(video) {
+  const streamUrl = video.video_stream_url;
+  
+  if (!streamUrl || isEmbedMode) {
+    switchPlayerMode(true);
+    return;
   }
-  return null;
+
+  // Native player error listener: switch to sandboxed iframe embed if direct load errors
+  hlsVideoPlayer.onerror = () => {
+    console.warn('Native video error detected. Switching to Sandboxed Embed Player...');
+    switchPlayerMode(true);
+  };
+
+  loadHlsStream(streamUrl);
 }
 
 /**
@@ -166,7 +158,7 @@ function loadHlsStream(streamUrl) {
   }
 
   if (!streamUrl) {
-    refreshStreamAndReload();
+    switchPlayerMode(true);
     return;
   }
 
@@ -185,7 +177,7 @@ function loadHlsStream(streamUrl) {
     }).catch(e => {
       if (playerLoader) playerLoader.classList.add('hidden');
       console.warn('Native MP4 play catch:', e.message);
-      refreshStreamAndReload();
+      switchPlayerMode(true);
     });
     return;
   }
@@ -218,8 +210,9 @@ function loadHlsStream(streamUrl) {
     hlsInstance.on(Hls.Events.ERROR, (event, data) => {
       if (data.fatal) {
         console.error('HLS Fatal Error detected:', data.type, data.details);
-        // Automatically self-heal on network/expired token error
-        refreshStreamAndReload();
+        if (playerLoader) playerLoader.classList.add('hidden');
+        // Fallback to Sandboxed Embed Mode on expired/stuck stream token
+        switchPlayerMode(true);
       }
     });
 
@@ -229,9 +222,6 @@ function loadHlsStream(streamUrl) {
       if (playerLoader) playerLoader.classList.add('hidden');
       hlsVideoPlayer.play().catch(_ => {});
     });
-    hlsVideoPlayer.onerror = () => {
-      refreshStreamAndReload();
-    };
     if (playerLoader) playerLoader.classList.add('hidden');
   }
 }

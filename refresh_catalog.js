@@ -66,8 +66,8 @@ async function refreshAllExpiredTokens() {
     }
   }
 
-  // Filter out items that still have invalid/missing stream URLs
-  const cleanCatalog = catalog.filter(v => v.video_stream_url && v.video_stream_url.includes('.m3u8')).map((v, idx) => ({
+  // Filter out non-xhaccess items or items that still have invalid/missing stream URLs
+  const cleanCatalog = catalog.filter(v => (v.page_url || '').includes('xhaccess.com') && v.video_stream_url && v.video_stream_url.includes('.m3u8')).map((v, idx) => ({
     ...v,
     index: idx + 1
   }));
