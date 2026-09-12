@@ -269,7 +269,7 @@ function renderRecommendations(video) {
     `;
 
     card.onclick = () => {
-      window.open(`watch.html?id=${encodeURIComponent(rec.id)}`, '_blank');
+      window.location.href = `watch.html?id=${encodeURIComponent(rec.id)}`;
     };
 
     recommendedGrid.appendChild(card);
