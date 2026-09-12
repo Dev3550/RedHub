@@ -8,16 +8,16 @@ const WORKER_COUNT = 10;
 const OUTPUT_FILE = path.resolve(__dirname, 'sample_videos.json');
 const CHECKPOINT_FILE = path.resolve(__dirname, 'checkpoint_urls.json');
 
-// Target Categories / Search Queries
+// Target Categories / Search Queries with Category Names
 const TARGET_CATEGORIES = [
-  'https://xhaccess.com/search/xhamsters',
-  'https://xhaccess.com/search/indian',
-  'https://xhaccess.com/search/desi',
-  'https://xhaccess.com/search/mom',
-  'https://xhaccess.com/search/japanese',
-  'https://xhaccess.com/search/pakistani',
-  'https://xhaccess.com/search/russian',
-  'https://xhaccess.com/search/american'
+  { name: 'All', url: 'https://xhaccess.com/search/xhamsters' },
+  { name: 'Indian', url: 'https://xhaccess.com/search/indian' },
+  { name: 'Desi', url: 'https://xhaccess.com/search/desi' },
+  { name: 'Mom', url: 'https://xhaccess.com/search/mom' },
+  { name: 'Japanese', url: 'https://xhaccess.com/search/japanese' },
+  { name: 'Pakistani', url: 'https://xhaccess.com/search/pakistani' },
+  { name: 'Russian', url: 'https://xhaccess.com/search/russian' },
+  { name: 'American', url: 'https://xhaccess.com/search/american' }
 ];
 
 let catalog = [];
@@ -41,17 +41,19 @@ function saveProgress() {
 async function discoverAllVideoItems() {
   const allItemsMap = new Map();
 
-  for (const catUrl of TARGET_CATEGORIES) {
-    console.log(`\n🔎 Scanning category: ${catUrl}`);
-    const html = await fetchHtml(catUrl);
+  for (const catObj of TARGET_CATEGORIES) {
+    console.log(`\n🔎 Scanning category [${catObj.name}]: ${catObj.url}`);
+    const html = await fetchHtml(catObj.url);
     if (!html) continue;
 
     const items = parseCatalogPage(html);
     console.log(`   ➜ Discovered ${items.length} raw video items`);
 
     for (const item of items) {
-      if (item.page_url && !isAdOrTracker(item.page_url) && !allItemsMap.has(item.page_url)) {
-        allItemsMap.set(item.page_url, item);
+      if (item.page_url && !isAdOrTracker(item.page_url)) {
+        if (!allItemsMap.has(item.page_url)) {
+          allItemsMap.set(item.page_url, { ...item, category: catObj.name });
+        }
       }
     }
     await new Promise(r => setTimeout(r, 200));
@@ -70,7 +72,7 @@ async function worker(id, queue) {
     if (!item || !item.page_url || scrapedUrls.has(item.page_url)) continue;
 
     try {
-      console.log(`[Worker ${id}] 📥 Fetching details for: ${item.title.substring(0, 40)}...`);
+      console.log(`[Worker ${id}] 📥 Fetching details for [${item.category}]: ${item.title.substring(0, 35)}...`);
 
       let mainStreamUrl = item.stream_url;
       const details = await extractStreamDetails(item.page_url);
@@ -84,6 +86,7 @@ async function worker(id, queue) {
         index: catalog.length + 1,
         id: item.id,
         title: item.title.replace(/(xHamster|xHamsters|xNXX|Pornhub|XVideos)/gi, 'HotTube').trim(),
+        category: item.category || 'All',
         duration: item.duration_formatted,
         duration_seconds: item.duration_seconds,
         thumbnail_url: item.thumbnail_url,

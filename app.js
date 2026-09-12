@@ -8,6 +8,7 @@ const FALLBACK_CATALOG = [
     "index": 1,
     "id": "27671902",
     "title": "Step Sister and Step Brother shared bed and Hard Rough Fuck",
+    "category": "Indian",
     "duration": "7:48",
     "duration_seconds": 468,
     "thumbnail_url": "https://ic-vt-nss.xhpingcdn.com/a/OTk4ZjQyMjIwYjJlYmY1NWEzN2FhM2M2ZDZjZDkyMjk/s(w:526,h:298),webp/027/671/902/1280x720.17600221.jpg",
@@ -21,6 +22,7 @@ const FALLBACK_CATALOG = [
     "index": 2,
     "id": "30390704",
     "title": "Exam time stepbrother and stepsister common problem first on HotTube",
+    "category": "Indian",
     "duration": "7:59",
     "duration_seconds": 479,
     "thumbnail_url": "https://ic-vt-nss.xhpingcdn.com/a/ZDkxZGY5MzdmNzRkZmUzOWQ3MThlMzRiODcyODQ4ZTc/s(w:526,h:298),webp/030/390/704/1280x720.17866827.jpg",
@@ -34,6 +36,7 @@ const FALLBACK_CATALOG = [
     "index": 3,
     "id": "30505032",
     "title": "Ain't No Fun if the Homies Can't Get None",
+    "category": "American",
     "duration": "44:27",
     "duration_seconds": 2667,
     "thumbnail_url": "https://ic-vt-nss.xhpingcdn.com/a/NDk3ODNhNDJjYjk0ZTc5NDFmNDdjMTEyYmEzMzI3NjQ/s(w:526,h:298),webp/030/505/032/v2/526x298.259.webp",
@@ -47,6 +50,7 @@ const FALLBACK_CATALOG = [
     "index": 4,
     "id": "29628466",
     "title": "New Indian beautyfull Muslim Desi girls hot video com",
+    "category": "Desi",
     "duration": "7:33",
     "duration_seconds": 453,
     "thumbnail_url": "https://ic-vt-nss.xhpingcdn.com/a/YmVlOGU1NzI5NjU0ZDRjZDQ5NmEzZDg4ZDY4MTc6NmI/s(w:526,h:298),webp/029/628/466/v2/526x298.216.webp",
@@ -60,6 +64,7 @@ const FALLBACK_CATALOG = [
     "index": 5,
     "id": "29987005",
     "title": "I'm making a video of my very sexy boyfriend but my horny stepbrother puts his cock in my vagina",
+    "category": "American",
     "duration": "9:14",
     "duration_seconds": 554,
     "thumbnail_url": "https://ic-vt-nss.xhpingcdn.com/a/Mzg2YTQ4MzAxYTM2YTJlMTYyYTU2MTM5ZDEyM2QyNjA/s(w:526,h:298),webp/029/987/005/v2/526x298.203.webp",
@@ -449,22 +454,36 @@ function setupEventListeners() {
     }
   });
 
-  // Category chip filtering
+  // Category chip filtering - Exact Matching per category!
   document.querySelectorAll('.chip').forEach(chip => {
     chip.addEventListener('click', (e) => {
       document.querySelectorAll('.chip').forEach(c => c.classList.remove('active'));
-      e.target.classList.add('active');
+      const targetChip = e.target.closest('.chip');
+      if (!targetChip) return;
+      targetChip.classList.add('active');
 
-      const cat = e.target.getAttribute('data-category');
+      const cat = targetChip.getAttribute('data-category');
+
       if (cat === 'all') {
+        // Show ALL videos mixed together!
         filteredVideos = [...videosData];
       } else if (cat === 'trending') {
-        filteredVideos = [...videosData].sort((a, b) => b.views - a.views);
-      } else if (cat === 'popular') {
-        filteredVideos = videosData.filter(v => v.views > 1000000);
-      } else if (cat === 'hd' || cat === 'recent') {
-        filteredVideos = [...videosData];
+        // Show most viewed videos sorted
+        filteredVideos = [...videosData].sort((a, b) => (b.views || 0) - (a.views || 0));
+      } else {
+        // Specific category filtering (e.g. Indian, Desi, Mom, Japanese, Pakistani, Russian, American)
+        const catLower = cat.toLowerCase();
+        filteredVideos = videosData.filter(v => {
+          if (v.category && v.category.toLowerCase() === catLower) return true;
+          if (v.title) {
+            const titleLower = v.title.toLowerCase();
+            if (catLower === 'mom' && (titleLower.includes('mom') || titleLower.includes('bhabhi') || titleLower.includes('stepmom'))) return true;
+            return titleLower.includes(catLower);
+          }
+          return false;
+        });
       }
+
       currentPage = 1;
       renderCurrentPage();
     });
