@@ -40,16 +40,20 @@ const prevPageBtn = document.getElementById('prevPageBtn');
 const nextPageBtn = document.getElementById('nextPageBtn');
 const pageNumbers = document.getElementById('pageNumbers');
 
-// Hero Banner Elements
-const heroBackdrop = document.getElementById('heroBackdrop');
-const heroTitle = document.getElementById('heroTitle');
-const heroChannel = document.getElementById('heroChannel');
-const heroViews = document.getElementById('heroViews');
-const heroDuration = document.getElementById('heroDuration');
-const heroPlayBtn = document.getElementById('heroPlayBtn');
+// Trending Carousel Elements & State
+const trendingCarouselTrack = document.getElementById('trendingCarouselTrack');
+const trendingDots = document.getElementById('trendingDots');
+const trendingPrevBtn = document.getElementById('trendingPrevBtn');
+const trendingNextBtn = document.getElementById('trendingNextBtn');
+const trendingPauseBtn = document.getElementById('trendingPauseBtn');
+
+let trendingVideos = [];
+let currentTrendingIndex = 0;
+let trendingAutoTimer = null;
+let isTrendingPaused = false;
 
 /**
- * Initialize App Data & Responsive Pagination Rules
+ * Initialize App Data & Responsive Rules
  */
 async function initApp() {
   updateItemsPerPage();
@@ -77,7 +81,12 @@ async function initApp() {
 
   filteredVideos = [...videosData];
 
-  // Check search query parameter in URL (e.g. index.html?search=desi)
+  // Get Top 6 videos sorted by views for Trending Section
+  trendingVideos = [...videosData]
+    .sort((a, b) => (b.views || 0) - (a.views || 0))
+    .slice(0, 6);
+
+  // Check search query parameter in URL
   const urlParams = new URLSearchParams(window.location.search);
   const searchParam = urlParams.get('search');
   if (searchParam && searchInput) {
@@ -85,140 +94,130 @@ async function initApp() {
     handleSearch();
   }
 
-  renderHeroBanner(videosData[0]);
+  renderTrendingCarousel();
   renderCurrentPage();
   setupEventListeners();
 }
 
 /**
- * Clean all third-party branding to HotTube
+ * Render 5-6 Auto-Scrolling Trending Videos Carousel
  */
-function cleanHotTubeBranding(text) {
-  if (!text) return '';
-  return text
-    .replace(/(xHamster|xHamsters|xNXX|Pornhub|XVideos)/gi, 'HotTube')
-    .trim();
-}
+function renderTrendingCarousel() {
+  if (!trendingCarouselTrack || !trendingVideos || trendingVideos.length === 0) return;
 
-/**
- * Determine items per page based on screen width (Desktop: 20, Mobile: 10)
- */
-function updateItemsPerPage() {
-  const isMobile = window.innerWidth <= 768;
-  itemsPerPage = isMobile ? 10 : 20;
+  trendingCarouselTrack.innerHTML = '';
+  if (trendingDots) trendingDots.innerHTML = '';
 
-  if (deviceBadge) {
-    deviceBadge.innerHTML = isMobile 
-      ? `<i class="fa-solid fa-mobile-screen"></i> 10 per page (Mobile)` 
-      : `<i class="fa-solid fa-desktop"></i> 20 per page (Desktop)`;
-  }
-}
-
-/**
- * Render Video Catalog Grid for Current Page
- */
-function renderCurrentPage() {
-  videoGrid.innerHTML = '';
-
-  const totalItems = filteredVideos.length;
-  const totalPages = Math.ceil(totalItems / itemsPerPage) || 1;
-
-  if (currentPage > totalPages) currentPage = totalPages;
-  if (currentPage < 1) currentPage = 1;
-
-  if (totalItems === 0) {
-    emptyState.classList.remove('hidden');
-    paginationWrapper.classList.add('hidden');
-    videoCountBadge.textContent = '0 Videos';
-    return;
-  }
-
-  emptyState.classList.add('hidden');
-  videoCountBadge.textContent = `${totalItems} Videos Available`;
-
-  const startIndex = (currentPage - 1) * itemsPerPage;
-  const endIndex = Math.min(startIndex + itemsPerPage, totalItems);
-  const pageItems = filteredVideos.slice(startIndex, endIndex);
-
-  pageItems.forEach(video => {
-    const card = document.createElement('article');
-    card.className = 'video-card';
+  trendingVideos.forEach((video, idx) => {
+    const card = document.createElement('div');
+    card.className = 'trending-card';
     card.innerHTML = `
-      <div class="thumb-container">
-        <img src="${video.thumbnail_url}" alt="${escapeHtml(video.title)}" loading="lazy" onerror="this.src='https://images.unsplash.com/photo-1536440136628-849c177e76a1?w=500&q=80'">
-        <span class="badge-duration">${video.duration}</span>
-        <div class="play-overlay">
-          <div class="play-icon-btn">
+      <div class="thumb-box">
+        <img src="${video.thumbnail_url || video.poster_url}" alt="${escapeHtml(video.title)}" loading="lazy" onerror="this.src='https://images.unsplash.com/photo-1536440136628-849c177e76a1?w=500&q=80'">
+        <span class="trending-rank-tag">🔥 #${idx + 1} Trending</span>
+        <span class="duration-badge">${video.duration || '00:00'}</span>
+        <div class="play-overlay-icon">
+          <div class="play-btn-circle">
             <i class="fa-solid fa-play"></i>
           </div>
         </div>
       </div>
-      <div class="card-content">
-        <h3 class="card-title">${escapeHtml(video.title)}</h3>
-        <div class="card-meta">
-          <span class="card-channel"><i class="fa-regular fa-circle-user"></i> ${escapeHtml(video.channel || 'HotTube Creator')}</span>
-          <span class="card-views"><i class="fa-regular fa-eye"></i> ${formatViews(video.views)}</span>
+      <div class="trending-card-info">
+        <h3 class="trending-card-title">${escapeHtml(video.title)}</h3>
+        <div class="trending-card-meta">
+          <span class="trending-card-channel"><i class="fa-regular fa-circle-user"></i> ${escapeHtml(video.channel || 'HotTube Original')}</span>
+          <span class="trending-card-views"><i class="fa-regular fa-eye"></i> ${formatViews(video.views)}</span>
         </div>
       </div>
     `;
 
-    // Direct Navigation to Watch Page (watch.html?id=<video_id>)
     card.onclick = () => {
       window.location.href = `watch.html?id=${encodeURIComponent(video.id)}`;
     };
 
-    videoGrid.appendChild(card);
+    trendingCarouselTrack.appendChild(card);
+
+    // Indicator Dot
+    if (trendingDots) {
+      const dot = document.createElement('div');
+      dot.className = `trending-dot ${idx === 0 ? 'active' : ''}`;
+      dot.onclick = (e) => {
+        e.stopPropagation();
+        goToTrendingSlide(idx);
+      };
+      trendingDots.appendChild(dot);
+    }
   });
 
-  renderPaginationControls(totalPages);
-}
+  startTrendingAutoPlay();
 
-/**
- * Render Pagination Controls (Prev, Page Numbers, Next)
- */
-function renderPaginationControls(totalPages) {
-  if (totalPages <= 1) {
-    paginationWrapper.classList.add('hidden');
-    return;
-  }
-
-  paginationWrapper.classList.remove('hidden');
-  prevPageBtn.disabled = (currentPage === 1);
-  nextPageBtn.disabled = (currentPage === totalPages);
-
-  pageNumbers.innerHTML = '';
-
-  for (let i = 1; i <= totalPages; i++) {
-    const numBtn = document.createElement('button');
-    numBtn.className = `num-btn ${i === currentPage ? 'active' : ''}`;
-    numBtn.textContent = i;
-    numBtn.onclick = () => goToPage(i);
-    pageNumbers.appendChild(numBtn);
-  }
-}
-
-function goToPage(page) {
-  currentPage = page;
-  renderCurrentPage();
-  if (catalogHeader) {
-    catalogHeader.scrollIntoView({ behavior: 'smooth' });
+  // Pause on hover
+  const carouselWrapper = document.getElementById('trendingCarouselWrapper');
+  if (carouselWrapper) {
+    carouselWrapper.addEventListener('mouseenter', () => {
+      stopTrendingAutoPlay();
+    });
+    carouselWrapper.addEventListener('mouseleave', () => {
+      if (!isTrendingPaused) startTrendingAutoPlay();
+    });
   }
 }
 
 /**
- * Render Hero Banner
+ * Slide to specific index in Trending Carousel
  */
-function renderHeroBanner(video) {
-  if (!video) return;
-  heroBackdrop.style.backgroundImage = `url('${video.poster_url || video.thumbnail_url}')`;
-  heroTitle.textContent = video.title;
-  heroChannel.innerHTML = `<i class="fa-regular fa-circle-user"></i> ${video.channel || 'HotTube Original'}`;
-  heroViews.innerHTML = `<i class="fa-regular fa-eye"></i> ${formatViews(video.views)} views`;
-  heroDuration.innerHTML = `<i class="fa-regular fa-clock"></i> ${video.duration}`;
+function updateTrendingSlidePosition() {
+  if (!trendingCarouselTrack) return;
+  const cards = trendingCarouselTrack.querySelectorAll('.trending-card');
+  if (!cards.length) return;
 
-  heroPlayBtn.onclick = () => {
-    window.location.href = `watch.html?id=${encodeURIComponent(video.id)}`;
-  };
+  const firstCard = cards[0];
+  const cardWidth = firstCard.offsetWidth + 16; // width + gap
+  const maxIndex = cards.length - 1;
+
+  if (currentTrendingIndex > maxIndex) currentTrendingIndex = 0;
+  if (currentTrendingIndex < 0) currentTrendingIndex = maxIndex;
+
+  trendingCarouselTrack.style.transform = `translateX(-${currentTrendingIndex * cardWidth}px)`;
+
+  // Update dots
+  if (trendingDots) {
+    const dots = trendingDots.querySelectorAll('.trending-dot');
+    dots.forEach((dot, idx) => {
+      dot.classList.toggle('active', idx === currentTrendingIndex);
+    });
+  }
+}
+
+function goToTrendingSlide(index) {
+  currentTrendingIndex = index;
+  updateTrendingSlidePosition();
+}
+
+function nextTrendingSlide() {
+  const maxIndex = trendingVideos.length - 1;
+  currentTrendingIndex = currentTrendingIndex >= maxIndex ? 0 : currentTrendingIndex + 1;
+  updateTrendingSlidePosition();
+}
+
+function prevTrendingSlide() {
+  const maxIndex = trendingVideos.length - 1;
+  currentTrendingIndex = currentTrendingIndex <= 0 ? maxIndex : currentTrendingIndex - 1;
+  updateTrendingSlidePosition();
+}
+
+function startTrendingAutoPlay() {
+  stopTrendingAutoPlay();
+  trendingAutoTimer = setInterval(() => {
+    nextTrendingSlide();
+  }, 3500); // Autoscroll every 3.5 seconds
+}
+
+function stopTrendingAutoPlay() {
+  if (trendingAutoTimer) {
+    clearInterval(trendingAutoTimer);
+    trendingAutoTimer = null;
+  }
 }
 
 /**
@@ -246,13 +245,44 @@ function handleSearch() {
  * Event Listeners
  */
 function setupEventListeners() {
-  // Screen resize handler for responsive pagination
+  // Trending Carousel Controls
+  if (trendingPrevBtn) {
+    trendingPrevBtn.addEventListener('click', () => {
+      prevTrendingSlide();
+      if (!isTrendingPaused) startTrendingAutoPlay();
+    });
+  }
+
+  if (trendingNextBtn) {
+    trendingNextBtn.addEventListener('click', () => {
+      nextTrendingSlide();
+      if (!isTrendingPaused) startTrendingAutoPlay();
+    });
+  }
+
+  if (trendingPauseBtn) {
+    trendingPauseBtn.addEventListener('click', () => {
+      isTrendingPaused = !isTrendingPaused;
+      if (isTrendingPaused) {
+        stopTrendingAutoPlay();
+        trendingPauseBtn.innerHTML = '<i class="fa-solid fa-play"></i>';
+        trendingPauseBtn.title = "Resume Auto-scroll";
+      } else {
+        startTrendingAutoPlay();
+        trendingPauseBtn.innerHTML = '<i class="fa-solid fa-pause"></i>';
+        trendingPauseBtn.title = "Pause Auto-scroll";
+      }
+    });
+  }
+
+  // Screen resize handler for responsive pagination & slide positioning
   window.addEventListener('resize', () => {
     const prevPer = itemsPerPage;
     updateItemsPerPage();
     if (prevPer !== itemsPerPage) {
       renderCurrentPage();
     }
+    updateTrendingSlidePosition();
   });
 
   prevPageBtn.addEventListener('click', () => {
@@ -294,10 +324,11 @@ function setupEventListeners() {
         const catLower = cat.toLowerCase();
         filteredVideos = videosData.filter(v => {
           if (v.category && v.category.toLowerCase() === catLower) return true;
+          if (Array.isArray(v.categories) && v.categories.some(c => c.toLowerCase() === catLower)) return true;
           if (v.title) {
             const titleLower = v.title.toLowerCase();
             if (catLower === 'mom' && (titleLower.includes('mom') || titleLower.includes('bhabhi') || titleLower.includes('stepmom'))) return true;
-            return titleLower.includes(catLower);
+            if (titleLower.includes(catLower)) return true;
           }
           return false;
         });
