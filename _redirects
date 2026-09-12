@@ -1,0 +1,3 @@
+# Cloudflare Pages Redirects & Clean URLs
+/watch  /watch.html  200
+/home   /index.html  200

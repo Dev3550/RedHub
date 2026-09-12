@@ -1,0 +1,21 @@
+# Cloudflare Pages Custom Headers Configuration
+
+# Allow CORS for all API / asset requests
+/*
+  Access-Control-Allow-Origin: *
+  Access-Control-Allow-Methods: GET, HEAD, OPTIONS
+  X-Content-Type-Options: nosniff
+  X-Frame-Options: SAMEORIGIN
+  Referrer-Policy: no-referrer-when-downgrade
+
+# Fast caching for video catalog data
+/sample_videos.json
+  Cache-Control: public, max-age=300, s-maxage=600, stale-while-revalidate=120
+  Content-Type: application/json; charset=utf-8
+
+# Cache control for CSS and JS assets
+/*.css
+  Cache-Control: public, max-age=86400
+
+/*.js
+  Cache-Control: public, max-age=86400
