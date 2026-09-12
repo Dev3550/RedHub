@@ -153,7 +153,7 @@ function renderCurrentPage() {
       `;
 
       card.onclick = () => {
-        window.location.href = `watch.html?id=${encodeURIComponent(video.id)}`;
+        window.open(`watch.html?id=${encodeURIComponent(video.id)}`, '_blank');
       };
 
       videoGrid.appendChild(card);
@@ -238,7 +238,7 @@ function renderTrendingCarousel() {
     `;
 
     card.onclick = () => {
-      window.location.href = `watch.html?id=${encodeURIComponent(video.id)}`;
+      window.open(`watch.html?id=${encodeURIComponent(video.id)}`, '_blank');
     };
 
     trendingCarouselTrack.appendChild(card);

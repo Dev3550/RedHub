@@ -93,14 +93,33 @@ async function initWatchPage() {
  * Load HLS Stream via HLS.js
  */
 function loadHlsStream(streamUrl) {
-  playerLoader.classList.remove('hidden');
+  if (playerLoader) playerLoader.classList.remove('hidden');
 
   if (hlsInstance) {
     hlsInstance.destroy();
     hlsInstance = null;
   }
 
-  if (Hls.isSupported() && streamUrl) {
+  if (!streamUrl) {
+    if (playerLoader) playerLoader.classList.add('hidden');
+    return;
+  }
+
+  // If stream URL is direct MP4 video file
+  if (streamUrl.includes('.mp4')) {
+    hlsVideoPlayer.src = streamUrl;
+    hlsVideoPlayer.addEventListener('loadeddata', () => {
+      if (playerLoader) playerLoader.classList.add('hidden');
+    });
+    hlsVideoPlayer.play().catch(e => {
+      if (playerLoader) playerLoader.classList.add('hidden');
+      console.warn('MP4 playback warning:', e.message);
+    });
+    return;
+  }
+
+  // If stream URL is HLS manifest (.m3u8)
+  if (Hls.isSupported() && streamUrl.includes('.m3u8')) {
     hlsInstance = new Hls({
       enableWorker: true,
       lowLatencyMode: true,
@@ -110,25 +129,24 @@ function loadHlsStream(streamUrl) {
     hlsInstance.attachMedia(hlsVideoPlayer);
 
     hlsInstance.on(Hls.Events.MANIFEST_PARSED, () => {
-      playerLoader.classList.add('hidden');
+      if (playerLoader) playerLoader.classList.add('hidden');
       hlsVideoPlayer.play().catch(e => console.warn('Autoplay prevented:', e.message));
     });
 
     hlsInstance.on(Hls.Events.ERROR, (event, data) => {
       if (data.fatal) {
-        playerLoader.classList.add('hidden');
+        if (playerLoader) playerLoader.classList.add('hidden');
         console.error('HLS Error:', data);
       }
     });
 
-  } else if (hlsVideoPlayer.canPlayType('application/vnd.apple.mpegurl') && streamUrl) {
+  } else {
     hlsVideoPlayer.src = streamUrl;
     hlsVideoPlayer.addEventListener('loadedmetadata', () => {
-      playerLoader.classList.add('hidden');
-      hlsVideoPlayer.play();
+      if (playerLoader) playerLoader.classList.add('hidden');
+      hlsVideoPlayer.play().catch(_ => {});
     });
-  } else {
-    playerLoader.classList.add('hidden');
+    if (playerLoader) playerLoader.classList.add('hidden');
   }
 }
 
@@ -176,9 +194,8 @@ function renderRecommendations(video) {
       </div>
     `;
 
-    // Standard Page Navigation for History Back Button Support
     card.onclick = () => {
-      window.location.href = `watch.html?id=${encodeURIComponent(rec.id)}`;
+      window.open(`watch.html?id=${encodeURIComponent(rec.id)}`, '_blank');
     };
 
     recommendedGrid.appendChild(card);
