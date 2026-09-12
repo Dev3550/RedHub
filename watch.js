@@ -1,5 +1,5 @@
 // ==========================================================================
-// HotTube Watch Page Logic & Smart Self-Healing Native HLS Player (watch.js)
+// HotTube Watch Page Logic & Ultra-Smooth Mobile Native HLS Player (watch.js)
 // ==========================================================================
 
 const FALLBACK_CATALOG = [
@@ -33,7 +33,6 @@ const watchDuration = document.getElementById('watchDuration');
 const watchCategory = document.getElementById('watchCategory');
 const recommendedGrid = document.getElementById('recommendedGrid');
 const searchInput = document.getElementById('searchInput');
-const qualityChips = document.getElementById('qualityChips');
 
 /**
  * Initialize Watch Page
@@ -75,7 +74,7 @@ async function initWatchPage() {
   watchCategory.innerHTML = `<i class="fa-solid fa-layer-group"></i> Category: ${currentVideo.category || 'Trending'}`;
   hlsVideoPlayer.poster = currentVideo.poster_url || currentVideo.thumbnail_url;
 
-  // Setup Quality Controls
+  // Setup Resolution Quality Dropdown Listener
   setupQualityControls();
 
   // Initialize Native HLS / Video Stream
@@ -186,12 +185,17 @@ function loadHlsStream(streamUrl) {
     return;
   }
 
-  // HLS Stream (.m3u8) playback via HLS.js
+  // HLS Stream (.m3u8) playback via HLS.js with Mobile Ultra-Smooth Buffer Optimization
   if (Hls.isSupported() && streamUrl.includes('.m3u8')) {
     hlsInstance = new Hls({
       enableWorker: true,
-      lowLatencyMode: true,
+      lowLatencyMode: false,
       backBufferLength: 90,
+      maxBufferLength: 60,             // Buffer 60s ahead for smooth lag-free mobile playback
+      maxMaxBufferLength: 120,         // Max 120s buffer
+      maxBufferSize: 60 * 1000 * 1000, // 60 MB buffer memory allocation
+      maxBufferHole: 0.5,
+      progressive: true,
       capLevelToPlayerSize: false
     });
 
@@ -228,27 +232,20 @@ function loadHlsStream(streamUrl) {
 }
 
 /**
- * Setup Interactive Quality Control Bar for HLS Streams (1080p, 720p, 480p, 360p, Auto)
+ * Setup Interactive Quality Control Dropdown Listener
  */
 function setupQualityControls() {
-  if (!qualityChips) return;
+  const qualitySelect = document.getElementById('qualitySelect');
+  if (!qualitySelect) return;
 
-  qualityChips.addEventListener('click', (e) => {
-    const btn = e.target.closest('.q-chip');
-    if (!btn) return;
-
-    // Update UI active chip
-    const chips = qualityChips.querySelectorAll('.q-chip');
-    chips.forEach(c => c.classList.remove('active'));
-    btn.classList.add('active');
-
-    const targetHeight = parseInt(btn.dataset.quality, 10);
+  qualitySelect.addEventListener('change', (e) => {
+    const targetHeight = parseInt(e.target.value, 10);
     setHlsQuality(targetHeight);
   });
 }
 
 /**
- * Force HLS Quality Level Switch in Hls.js Engine
+ * Force HLS Quality Level Switch Live in Hls.js Engine
  */
 function setHlsQuality(targetHeight) {
   if (!hlsInstance) {
@@ -259,6 +256,7 @@ function setHlsQuality(targetHeight) {
   if (targetHeight === -1) {
     hlsInstance.currentLevel = -1; // Auto adaptive
     hlsInstance.loadLevel = -1;
+    hlsInstance.nextLevel = -1;
     console.log('⚡ HLS Quality set to Auto (Adaptive)');
     return;
   }
@@ -281,7 +279,7 @@ function setHlsQuality(targetHeight) {
     hlsInstance.currentLevel = matchedIndex;
     hlsInstance.nextLevel = matchedIndex;
     hlsInstance.loadLevel = matchedIndex;
-    console.log(`🎬 HLS Quality switched to Level ${matchedIndex} (${levels[matchedIndex].height}p @ ${Math.round(levels[matchedIndex].bitrate / 1000)} kbps)`);
+    console.log(`🎬 HLS Quality switched live to Level ${matchedIndex} (${levels[matchedIndex].height}p @ ${Math.round(levels[matchedIndex].bitrate / 1000)} kbps)`);
   }
 }
 

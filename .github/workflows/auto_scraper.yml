@@ -2,8 +2,8 @@ name: HotTube Auto Scraper Cron
 
 on:
   schedule:
-    # Run every 2 hours automatically
-    - cron: '0 */2 * * *'
+    # Run every 30 minutes automatically to refresh stream tokens
+    - cron: '*/30 * * * *'
   push:
     # Trigger cloud scraping on every push to main
     branches:

@@ -904,31 +904,48 @@ body {
   gap: 6px;
 }
 
-.quality-chips {
-  display: flex;
+.select-dropdown-wrapper {
+  position: relative;
+  display: inline-flex;
   align-items: center;
-  gap: 8px;
-  flex-wrap: wrap;
 }
 
-.q-chip {
-  background: rgba(255, 255, 255, 0.06);
-  border: 1px solid var(--border-color);
-  color: var(--text-muted);
-  padding: 5px 14px;
-  border-radius: 16px;
-  font-size: 0.8rem;
+.quality-dropdown-select {
+  appearance: none;
+  -webkit-appearance: none;
+  background: rgba(255, 30, 75, 0.15);
+  border: 1.5px solid var(--primary-color);
+  color: var(--text-color);
+  padding: 8px 36px 8px 16px;
+  border-radius: 20px;
+  font-size: 0.88rem;
   font-weight: 600;
   font-family: var(--font-family);
   cursor: pointer;
+  outline: none;
   transition: all 0.3s ease;
+  box-shadow: 0 4px 12px rgba(255, 30, 75, 0.25);
 }
 
-.q-chip:hover, .q-chip.active {
-  background: var(--accent-gradient);
-  color: white;
-  border-color: transparent;
-  box-shadow: 0 2px 10px rgba(255, 30, 75, 0.4);
+.quality-dropdown-select:hover,
+.quality-dropdown-select:focus {
+  background: rgba(255, 30, 75, 0.25);
+  box-shadow: 0 6px 16px rgba(255, 30, 75, 0.4);
+}
+
+.quality-dropdown-select option {
+  background: #14141d;
+  color: #ffffff;
+  padding: 10px;
+  font-weight: 600;
+}
+
+.select-arrow {
+  position: absolute;
+  right: 14px;
+  pointer-events: none;
+  color: var(--primary-color);
+  font-size: 0.75rem;
 }
 
 .watch-actions {

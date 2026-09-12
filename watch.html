@@ -51,7 +51,7 @@
     <!-- Player Wrapper -->
     <div class="watch-player-card">
       <div class="watch-player-wrapper">
-        <video id="hlsVideoPlayer" controls playsinline poster=""></video>
+        <video id="hlsVideoPlayer" controls playsinline preload="auto" poster=""></video>
         <div class="player-loader" id="playerLoader">
           <div class="spinner"></div>
           <span>Loading HotTube Stream...</span>
@@ -68,14 +68,17 @@
           <span id="watchCategory" class="badge-stream"><i class="fa-solid fa-layer-group"></i> Category</span>
         </div>
 
-        <!-- Video Quality Control Bar -->
+        <!-- Video Quality Control Bar (Dropdown) -->
         <div class="quality-bar-wrapper">
-          <span class="quality-label"><i class="fa-solid fa-gear"></i> Video Quality:</span>
-          <div class="quality-chips" id="qualityChips">
-            <button class="q-chip active" data-quality="-1">⚡ Auto (Adaptive)</button>
-            <button class="q-chip" data-quality="720">📺 720p HD</button>
-            <button class="q-chip" data-quality="480">🎥 480p SD</button>
-            <button class="q-chip" data-quality="360">📱 360p Data Saver</button>
+          <label for="qualitySelect" class="quality-label"><i class="fa-solid fa-sliders"></i> Resolution Quality:</label>
+          <div class="select-dropdown-wrapper">
+            <select id="qualitySelect" class="quality-dropdown-select">
+              <option value="-1" selected>⚡ Auto (Adaptive)</option>
+              <option value="720">📺 720p HD</option>
+              <option value="480">🎥 480p SD</option>
+              <option value="360">📱 360p Data Saver</option>
+            </select>
+            <i class="fa-solid fa-chevron-down select-arrow"></i>
           </div>
         </div>
 
