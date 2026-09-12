@@ -1,0 +1,35 @@
+name: HotTube Auto Scraper Cron
+
+on:
+  schedule:
+    # Run every 2 hours automatically
+    - cron: '0 */2 * * *'
+  workflow_dispatch: # Allows manual trigger from GitHub UI
+
+jobs:
+  scrape-and-update:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+
+    steps:
+      - name: Checkout Repository
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js Environment
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+
+      - name: Install Dependencies
+        run: npm ci || npm install
+
+      - name: Run 10-Worker Cluster Scraper
+        run: node scraper_cluster.js
+
+      - name: Commit and Push Updated Catalog
+        run: |
+          git config --global user.name "github-actions[bot]"
+          git config --global user.email "github-actions[bot]@users.noreply.github.com"
+          git add sample_videos.json checkpoint_urls.json || true
+          git diff --quiet && git diff --staged --quiet || (git commit -m "chore: auto-update video catalog and stream URLs [skip ci]" && git push)
