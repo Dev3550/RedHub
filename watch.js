@@ -187,11 +187,14 @@ function loadHlsStream(streamUrl) {
     hlsInstance = new Hls({
       enableWorker: true,
       lowLatencyMode: false,
-      backBufferLength: 90,
-      maxBufferLength: 60,             // Buffer 60s ahead for smooth lag-free mobile playback
-      maxMaxBufferLength: 120,         // Max 120s buffer
-      maxBufferSize: 60 * 1000 * 1000, // 60 MB buffer memory allocation
-      maxBufferHole: 0.5,
+      autoStartLoad: true,
+      startLevel: -1,                  // Auto adaptive initial level for instant play
+      backBufferLength: 60,
+      maxBufferLength: 30,             // Fast initial buffer fill (30s)
+      maxMaxBufferLength: 90,          // Max 90s buffer
+      maxBufferSize: 60 * 1024 * 1024, // 60 MB memory allocation
+      maxBufferHole: 0.2,
+      highBufferWatchdogPeriod: 1,
       progressive: true,
       capLevelToPlayerSize: false
     });
@@ -203,7 +206,10 @@ function loadHlsStream(streamUrl) {
       if (playerLoader) playerLoader.classList.add('hidden');
       console.log('HLS Manifest Parsed! Available Quality Levels:', data.levels);
 
-      // Start playing
+      // Dynamically populate resolution quality dropdown from manifest levels
+      populateQualityDropdown(data.levels);
+
+      // Start playing immediately
       hlsVideoPlayer.play().catch(e => console.warn('Autoplay prevented:', e.message));
     });
 
@@ -227,6 +233,43 @@ function loadHlsStream(streamUrl) {
 }
 
 /**
+ * Dynamically Populate Quality Dropdown based on actual stream resolutions
+ */
+function populateQualityDropdown(levels) {
+  const qualitySelect = document.getElementById('qualitySelect');
+  if (!qualitySelect || !levels || levels.length === 0) return;
+
+  qualitySelect.innerHTML = '<option value="-1">⚡ Auto (Adaptive HD/SD)</option>';
+
+  // Sort levels descending by resolution height
+  const levelItems = levels.map((lvl, index) => ({
+    index,
+    height: lvl.height || 0,
+    width: lvl.width || 0,
+    bitrate: lvl.bitrate || 0
+  })).sort((a, b) => b.height - a.height);
+
+  const addedHeights = new Set();
+
+  levelItems.forEach(lvl => {
+    if (lvl.height <= 0 || addedHeights.has(lvl.height)) return;
+    addedHeights.add(lvl.height);
+
+    let icon = '📱';
+    if (lvl.height >= 1080) icon = '👑';
+    else if (lvl.height >= 720) icon = '📺';
+    else if (lvl.height >= 480) icon = '🎥';
+
+    let tag = lvl.height >= 720 ? 'HD' : (lvl.height >= 480 ? 'SD' : 'Saver');
+
+    const opt = document.createElement('option');
+    opt.value = lvl.index;
+    opt.textContent = `${icon} ${lvl.height}p ${tag}`;
+    qualitySelect.appendChild(opt);
+  });
+}
+
+/**
  * Setup Interactive Quality Control Dropdown Listener
  */
 function setupQualityControls() {
@@ -234,21 +277,21 @@ function setupQualityControls() {
   if (!qualitySelect) return;
 
   qualitySelect.addEventListener('change', (e) => {
-    const targetHeight = parseInt(e.target.value, 10);
-    setHlsQuality(targetHeight);
+    const selectedLevel = parseInt(e.target.value, 10);
+    setHlsQuality(selectedLevel);
   });
 }
 
 /**
  * Force HLS Quality Level Switch Live in Hls.js Engine
  */
-function setHlsQuality(targetHeight) {
+function setHlsQuality(selectedLevel) {
   if (!hlsInstance) {
-    console.warn('Quality switch requested, but HLS instance is not active for this video format.');
+    console.warn('Quality switch requested, but HLS instance is not active.');
     return;
   }
 
-  if (targetHeight === -1) {
+  if (selectedLevel === -1) {
     hlsInstance.currentLevel = -1; // Auto adaptive
     hlsInstance.loadLevel = -1;
     hlsInstance.nextLevel = -1;
@@ -256,25 +299,12 @@ function setHlsQuality(targetHeight) {
     return;
   }
 
-  const levels = hlsInstance.levels;
-  if (!levels || levels.length === 0) return;
-
-  let matchedIndex = -1;
-  let minDiff = Infinity;
-
-  levels.forEach((level, idx) => {
-    const diff = Math.abs(level.height - targetHeight);
-    if (diff < minDiff) {
-      minDiff = diff;
-      matchedIndex = idx;
-    }
-  });
-
-  if (matchedIndex !== -1) {
-    hlsInstance.currentLevel = matchedIndex;
-    hlsInstance.nextLevel = matchedIndex;
-    hlsInstance.loadLevel = matchedIndex;
-    console.log(`🎬 HLS Quality switched live to Level ${matchedIndex} (${levels[matchedIndex].height}p @ ${Math.round(levels[matchedIndex].bitrate / 1000)} kbps)`);
+  if (selectedLevel >= 0 && selectedLevel < hlsInstance.levels.length) {
+    hlsInstance.currentLevel = selectedLevel;
+    hlsInstance.nextLevel = selectedLevel;
+    hlsInstance.loadLevel = selectedLevel;
+    const targetLvl = hlsInstance.levels[selectedLevel];
+    console.log(`🎬 HLS Quality switched live to Level index ${selectedLevel} (${targetLvl ? targetLvl.height : 'custom'}p)`);
   }
 }
 
