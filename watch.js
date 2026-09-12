@@ -1,5 +1,5 @@
 // ==========================================================================
-// HotTube Watch Page Logic & Single Native HLS/HTML5 Player (watch.js)
+// HotTube Watch Page Logic & Smart Self-Healing Native HLS Player (watch.js)
 // ==========================================================================
 
 const FALLBACK_CATALOG = [
@@ -21,6 +21,7 @@ const FALLBACK_CATALOG = [
 let catalogData = [];
 let currentVideo = null;
 let hlsInstance = null;
+let isRefreshingToken = false;
 
 // DOM Elements
 const hlsVideoPlayer = document.getElementById('hlsVideoPlayer');
@@ -94,6 +95,62 @@ async function initWatchPage() {
 }
 
 /**
+ * Self-Healing: Refresh Expired Stream Token from Source Page
+ */
+async function refreshStreamAndReload() {
+  if (isRefreshingToken || !currentVideo || !currentVideo.page_url) return;
+  isRefreshingToken = true;
+
+  if (playerLoader) {
+    playerLoader.classList.remove('hidden');
+    const span = playerLoader.querySelector('span');
+    if (span) span.textContent = 'Refreshing Stream Token...';
+  }
+
+  console.log('🔄 Expired stream token detected. Refreshing token on-demand from source page...');
+  const freshUrl = await fetchFreshStreamUrl(currentVideo.page_url);
+
+  if (freshUrl && freshUrl !== currentVideo.video_stream_url) {
+    console.log('✅ Fresh working stream token obtained:', freshUrl);
+    currentVideo.video_stream_url = freshUrl;
+    isRefreshingToken = false;
+    loadHlsStream(freshUrl);
+  } else {
+    isRefreshingToken = false;
+    if (playerLoader) playerLoader.classList.add('hidden');
+    console.warn('Could not refresh stream token.');
+  }
+}
+
+/**
+ * Fetch fresh stream URL from video detail page
+ */
+async function fetchFreshStreamUrl(pageUrl) {
+  try {
+    const res = await fetch(pageUrl);
+    if (!res.ok) return null;
+    const html = await res.text();
+
+    const initialsMatch = html.match(/window\.initials\s*=\s*(\{.*?\});\s*<\/script>/s);
+    if (initialsMatch && initialsMatch[1]) {
+      const parsed = JSON.parse(initialsMatch[1]);
+      const videoModel = parsed?.videoModel || parsed?.video || {};
+      if (videoModel.sources && videoModel.sources.hls) {
+        return videoModel.sources.hls;
+      }
+    }
+
+    const m3u8Match = html.match(/(https?:\\?\/\\?\/[^"' ]+\.m3u8[^"' ]*)/i);
+    if (m3u8Match) {
+      return m3u8Match[1].replace(/\\/g, '');
+    }
+  } catch (err) {
+    console.warn('Failed to fetch fresh stream URL:', err.message);
+  }
+  return null;
+}
+
+/**
  * Load HLS Stream via HLS.js or Native HTML5 Video
  */
 function loadHlsStream(streamUrl) {
@@ -105,7 +162,7 @@ function loadHlsStream(streamUrl) {
   }
 
   if (!streamUrl) {
-    if (playerLoader) playerLoader.classList.add('hidden');
+    refreshStreamAndReload();
     return;
   }
 
@@ -124,6 +181,7 @@ function loadHlsStream(streamUrl) {
     }).catch(e => {
       if (playerLoader) playerLoader.classList.add('hidden');
       console.warn('Native MP4 play catch:', e.message);
+      refreshStreamAndReload();
     });
     return;
   }
@@ -142,7 +200,6 @@ function loadHlsStream(streamUrl) {
 
     hlsInstance.on(Hls.Events.MANIFEST_PARSED, (event, data) => {
       if (playerLoader) playerLoader.classList.add('hidden');
-      
       console.log('HLS Manifest Parsed! Available Quality Levels:', data.levels);
 
       // Start playing
@@ -151,8 +208,9 @@ function loadHlsStream(streamUrl) {
 
     hlsInstance.on(Hls.Events.ERROR, (event, data) => {
       if (data.fatal) {
-        console.error('HLS Fatal Error:', data.type);
-        if (playerLoader) playerLoader.classList.add('hidden');
+        console.error('HLS Fatal Error detected:', data.type, data.details);
+        // Automatically self-heal on network/expired token error
+        refreshStreamAndReload();
       }
     });
 
@@ -162,6 +220,9 @@ function loadHlsStream(streamUrl) {
       if (playerLoader) playerLoader.classList.add('hidden');
       hlsVideoPlayer.play().catch(_ => {});
     });
+    hlsVideoPlayer.onerror = () => {
+      refreshStreamAndReload();
+    };
     if (playerLoader) playerLoader.classList.add('hidden');
   }
 }
