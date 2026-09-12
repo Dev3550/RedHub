@@ -1,0 +1,110 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Watch Video - HotTube</title>
+  <meta name="description" content="Watch high quality trending video on HotTube. Stream HLS video online.">
+  <!-- Google Fonts -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700;800&family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
+  <!-- FontAwesome Icons -->
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+  <!-- HLS.js Library -->
+  <script src="https://cdn.jsdelivr.net/npm/hls.js@latest"></script>
+  <!-- Stylesheet -->
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+
+  <!-- Navbar -->
+  <header class="navbar">
+    <div class="nav-container">
+      <div class="nav-left">
+        <a href="index.html" class="btn-back" title="Back to Home">
+          <i class="fa-solid fa-arrow-left"></i>
+        </a>
+        <a href="index.html" class="logo">
+          <i class="fa-solid fa-play-circle logo-icon"></i>
+          <span>Hot<span class="logo-accent">Tube</span></span>
+        </a>
+      </div>
+
+      <div class="search-box">
+        <i class="fa-solid fa-magnifying-glass search-icon"></i>
+        <input type="text" id="searchInput" placeholder="Search HotTube videos..." autocomplete="off">
+      </div>
+
+      <div class="nav-actions">
+        <a href="index.html" class="action-btn" title="Home"><i class="fa-solid fa-house"></i></a>
+        <div class="user-avatar">
+          <img src="https://ui-avatars.com/api/?name=HotTube&background=FF1E4B&color=fff" alt="HotTube Avatar">
+        </div>
+      </div>
+    </div>
+  </header>
+
+  <!-- Main Watch Container -->
+  <main class="watch-main-content">
+    
+    <!-- Player Wrapper -->
+    <div class="watch-player-card">
+      <div class="watch-player-wrapper">
+        <video id="hlsVideoPlayer" controls playsinline poster=""></video>
+        <div class="player-loader" id="playerLoader">
+          <div class="spinner"></div>
+          <span>Loading HotTube HLS Stream...</span>
+        </div>
+      </div>
+
+      <!-- Video Information -->
+      <div class="watch-video-info">
+        <h1 id="watchTitle" class="watch-video-title">Loading Video Title...</h1>
+        <div class="watch-video-meta">
+          <span id="watchChannel"><i class="fa-regular fa-circle-user"></i> HotTube Creator</span>
+          <span id="watchViews"><i class="fa-regular fa-eye"></i> 0 views</span>
+          <span id="watchDuration"><i class="fa-regular fa-clock"></i> 0:00</span>
+          <span id="watchCategory" class="badge-stream"><i class="fa-solid fa-layer-group"></i> Category</span>
+        </div>
+        <div class="watch-actions">
+          <button class="watch-act-btn"><i class="fa-regular fa-thumbs-up"></i> Like</button>
+          <button class="watch-act-btn"><i class="fa-solid fa-share-nodes"></i> Share</button>
+          <button class="watch-act-btn"><i class="fa-regular fa-bookmark"></i> Save</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- Category Recommended Videos Section -->
+    <section class="recommendations-section">
+      <div class="section-header">
+        <h2><i class="fa-solid fa-rectangle-list"></i> Category Recommendations</h2>
+        <span class="video-count" id="recCountBadge">Recommended Videos</span>
+      </div>
+
+      <div class="video-grid" id="recommendedGrid">
+        <!-- Dynamic Category Recommendation Cards Inserted Here via watch.js -->
+      </div>
+    </section>
+
+  </main>
+
+  <!-- Footer -->
+  <footer class="footer">
+    <div class="footer-container">
+      <div class="footer-brand">
+        <a href="index.html" class="logo">
+          <i class="fa-solid fa-play-circle logo-icon"></i>
+          <span>Hot<span class="logo-accent">Tube</span></span>
+        </a>
+        <p>HotTube Media - Ultra-Fast Responsive Video Streaming Platform Powered by HLS Engine.</p>
+      </div>
+      <div class="footer-copyright">
+        &copy; 2026 HotTube Inc. All rights reserved. Built for high performance and responsive streaming.
+      </div>
+    </div>
+  </footer>
+
+  <script src="watch.js"></script>
+</body>
+</html>

@@ -11,19 +11,15 @@
   <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700;800&family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
   <!-- FontAwesome Icons -->
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
-  <!-- HLS.js Library -->
-  <script src="https://cdn.jsdelivr.net/npm/hls.js@latest"></script>
   <!-- Stylesheet -->
   <link rel="stylesheet" href="style.css">
-  <!-- Ad Configuration -->
-  <script src="ads_config.js"></script>
 </head>
 <body>
 
   <!-- Navbar -->
   <header class="navbar">
     <div class="nav-container">
-      <a href="#" class="logo">
+      <a href="index.html" class="logo">
         <i class="fa-solid fa-play-circle logo-icon"></i>
         <span>Hot<span class="logo-accent">Tube</span></span>
       </a>
@@ -46,9 +42,6 @@
 
   <!-- Main Container -->
   <main class="main-content">
-
-    <!-- Header Ad Slot (Adsterra / JuicyAds) -->
-    <div id="headerAdSlot"></div>
 
     <!-- Hero Banner -->
     <section class="hero-banner" id="heroBanner">
@@ -92,7 +85,7 @@
 
     <!-- Video Grid -->
     <section class="video-grid" id="videoGrid">
-      <!-- Dynamic Video Cards & Native Ad Slots Inserted Here via app.js -->
+      <!-- Dynamic Video Cards Inserted Here via app.js -->
     </section>
 
     <!-- Pagination Controls -->
@@ -118,48 +111,11 @@
 
   </main>
 
-  <!-- Video Player Modal -->
-  <div class="modal-backdrop hidden" id="playerModal">
-    <div class="modal-container">
-      <button class="close-modal-btn" id="closeModalBtn" title="Close Player">
-        <i class="fa-solid fa-xmark"></i>
-      </button>
-      <div class="player-wrapper">
-        <video id="hlsVideoPlayer" controls playsinline poster=""></video>
-        <div class="player-loader hidden" id="playerLoader">
-          <div class="spinner"></div>
-          <span>Loading HotTube HLS Stream...</span>
-        </div>
-      </div>
-      <div class="modal-details">
-        <h2 id="modalVideoTitle" class="modal-title">Video Title</h2>
-        <div class="modal-meta">
-          <span id="modalChannel"><i class="fa-regular fa-circle-user"></i> HotTube Creator</span>
-          <span id="modalViews"><i class="fa-regular fa-eye"></i> 0 views</span>
-          <span id="modalDuration"><i class="fa-regular fa-clock"></i> 0:00</span>
-          <span class="badge-stream"><i class="fa-solid fa-signal"></i> Live HotTube Stream</span>
-        </div>
-
-        <!-- In-Player Ad Slot -->
-        <div class="player-ad-box">
-          <span class="ad-label"><i class="fa-solid fa-rectangle-ad"></i> SPONSORED ADSTERRA / JUICYADS BANNER</span>
-          <p>🔥 Click Here to Access Premium Fast Video Cloud Storage</p>
-        </div>
-
-        <div class="modal-actions">
-          <button class="modal-btn"><i class="fa-regular fa-thumbs-up"></i> Like</button>
-          <button class="modal-btn"><i class="fa-solid fa-share-nodes"></i> Share</button>
-          <button class="modal-btn"><i class="fa-regular fa-bookmark"></i> Save</button>
-        </div>
-      </div>
-    </div>
-  </div>
-
   <!-- Footer -->
   <footer class="footer">
     <div class="footer-container">
       <div class="footer-brand">
-        <a href="#" class="logo">
+        <a href="index.html" class="logo">
           <i class="fa-solid fa-play-circle logo-icon"></i>
           <span>Hot<span class="logo-accent">Tube</span></span>
         </a>
