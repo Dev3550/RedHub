@@ -347,6 +347,11 @@ function formatViews(num) {
   return num.toString();
 }
 
+function cleanHotTubeBranding(str) {
+  if (!str) return 'HotTube Video';
+  return str.replace(/(xHamster|xHamsters|xNXX|Pornhub|XVideos|FreePornVideo)/gi, 'HotTube').trim();
+}
+
 function escapeHtml(str) {
   if (!str) return '';
   return str.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;");
