@@ -53,6 +53,17 @@ let trendingAutoTimer = null;
 let isTrendingPaused = false;
 
 /**
+ * Update items per page according to responsive screen width
+ */
+function updateItemsPerPage() {
+  itemsPerPage = window.innerWidth <= 768 ? 10 : 20;
+  if (deviceBadge) {
+    const mode = window.innerWidth <= 768 ? 'Mobile' : 'Desktop';
+    deviceBadge.innerHTML = `<i class="fa-solid fa-desktop"></i> ${itemsPerPage} items / page (${mode})`;
+  }
+}
+
+/**
  * Initialize App Data & Responsive Rules
  */
 async function initApp() {
@@ -97,6 +108,105 @@ async function initApp() {
   renderTrendingCarousel();
   renderCurrentPage();
   setupEventListeners();
+}
+
+/**
+ * Render Current Page Video Grid & Pagination
+ */
+function renderCurrentPage() {
+  if (videoCountBadge) {
+    videoCountBadge.textContent = `${filteredVideos.length.toLocaleString()} Videos Available`;
+  }
+
+  if (filteredVideos.length === 0) {
+    if (emptyState) emptyState.classList.remove('hidden');
+    if (videoGrid) videoGrid.innerHTML = '';
+    if (paginationWrapper) paginationWrapper.classList.add('hidden');
+    return;
+  }
+
+  if (emptyState) emptyState.classList.add('hidden');
+  if (paginationWrapper) paginationWrapper.classList.remove('hidden');
+
+  const start = (currentPage - 1) * itemsPerPage;
+  const end = start + itemsPerPage;
+  const pageVideos = filteredVideos.slice(start, end);
+
+  if (videoGrid) {
+    videoGrid.innerHTML = '';
+    pageVideos.forEach(video => {
+      const card = document.createElement('article');
+      card.className = 'video-card';
+      card.innerHTML = `
+        <div class="thumb-container">
+          <img src="${video.thumbnail_url || video.poster_url}" alt="${escapeHtml(video.title)}" loading="lazy" onerror="this.src='https://images.unsplash.com/photo-1536440136628-849c177e76a1?w=500&q=80'">
+          <span class="badge-duration">${video.duration || '10:00'}</span>
+          <div class="play-overlay">
+            <div class="play-icon-btn">
+              <i class="fa-solid fa-play"></i>
+            </div>
+          </div>
+        </div>
+        <div class="card-content">
+          <h3 class="card-title">${escapeHtml(video.title)}</h3>
+          <div class="card-meta">
+            <span class="card-channel"><i class="fa-regular fa-circle-user"></i> ${escapeHtml(video.channel || 'HotTube Creator')}</span>
+            <span class="card-views"><i class="fa-regular fa-eye"></i> ${formatViews(video.views)}</span>
+          </div>
+        </div>
+      `;
+
+      card.onclick = () => {
+        window.location.href = `watch.html?id=${encodeURIComponent(video.id)}`;
+      };
+
+      videoGrid.appendChild(card);
+    });
+  }
+
+  renderPagination();
+}
+
+/**
+ * Render Pagination Navigation Buttons
+ */
+function renderPagination() {
+  if (!pageNumbers) return;
+  pageNumbers.innerHTML = '';
+
+  const totalPages = Math.ceil(filteredVideos.length / itemsPerPage);
+
+  if (prevPageBtn) prevPageBtn.disabled = currentPage === 1;
+  if (nextPageBtn) nextPageBtn.disabled = currentPage === totalPages || totalPages === 0;
+
+  if (totalPages <= 1) return;
+
+  const maxButtons = 5;
+  let startPage = Math.max(1, currentPage - Math.floor(maxButtons / 2));
+  let endPage = Math.min(totalPages, startPage + maxButtons - 1);
+
+  if (endPage - startPage + 1 < maxButtons) {
+    startPage = Math.max(1, endPage - maxButtons + 1);
+  }
+
+  for (let i = startPage; i <= endPage; i++) {
+    const btn = document.createElement('button');
+    btn.className = `page-num ${i === currentPage ? 'active' : ''}`;
+    btn.textContent = i;
+    btn.onclick = () => goToPage(i);
+    pageNumbers.appendChild(btn);
+  }
+}
+
+/**
+ * Navigate to specific page
+ */
+function goToPage(page) {
+  currentPage = page;
+  renderCurrentPage();
+  if (catalogHeader) {
+    catalogHeader.scrollIntoView({ behavior: 'smooth', block: 'start' });
+  }
 }
 
 /**
@@ -224,16 +334,19 @@ function stopTrendingAutoPlay() {
  * Filter Videos via Search Query
  */
 function handleSearch() {
+  if (!searchInput) return;
   const query = searchInput.value.trim().toLowerCase();
   
-  if (query.length > 0) {
-    clearSearchBtn.classList.remove('hidden');
-  } else {
-    clearSearchBtn.classList.add('hidden');
+  if (clearSearchBtn) {
+    if (query.length > 0) {
+      clearSearchBtn.classList.remove('hidden');
+    } else {
+      clearSearchBtn.classList.add('hidden');
+    }
   }
 
   filteredVideos = videosData.filter(v => 
-    v.title.toLowerCase().includes(query) || 
+    (v.title && v.title.toLowerCase().includes(query)) || 
     (v.channel && v.channel.toLowerCase().includes(query))
   );
 
@@ -285,26 +398,38 @@ function setupEventListeners() {
     updateTrendingSlidePosition();
   });
 
-  prevPageBtn.addEventListener('click', () => {
-    if (currentPage > 1) goToPage(currentPage - 1);
-  });
+  if (prevPageBtn) {
+    prevPageBtn.addEventListener('click', () => {
+      if (currentPage > 1) goToPage(currentPage - 1);
+    });
+  }
 
-  nextPageBtn.addEventListener('click', () => {
-    const totalPages = Math.ceil(filteredVideos.length / itemsPerPage);
-    if (currentPage < totalPages) goToPage(currentPage + 1);
-  });
+  if (nextPageBtn) {
+    nextPageBtn.addEventListener('click', () => {
+      const totalPages = Math.ceil(filteredVideos.length / itemsPerPage);
+      if (currentPage < totalPages) goToPage(currentPage + 1);
+    });
+  }
 
-  searchInput.addEventListener('input', handleSearch);
+  if (searchInput) {
+    searchInput.addEventListener('input', handleSearch);
+  }
 
-  clearSearchBtn.addEventListener('click', () => {
-    searchInput.value = '';
-    handleSearch();
-  });
+  if (clearSearchBtn) {
+    clearSearchBtn.addEventListener('click', () => {
+      searchInput.value = '';
+      handleSearch();
+    });
+  }
 
-  resetSearchBtn.addEventListener('click', () => {
-    searchInput.value = '';
-    handleSearch();
-  });
+  if (resetSearchBtn) {
+    resetSearchBtn.addEventListener('click', () => {
+      if (searchInput) searchInput.value = '';
+      filteredVideos = [...videosData];
+      currentPage = 1;
+      renderCurrentPage();
+    });
+  }
 
   // Category chip filtering
   document.querySelectorAll('.chip').forEach(chip => {
