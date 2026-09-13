@@ -34,9 +34,12 @@ jobs:
       - name: Run 10-Worker Cluster Scraper
         run: node scraper_cluster.js
 
-      - name: Commit and Push Updated Catalog
+      - name: Regenerate Google Video Sitemap & Robots.txt
+        run: node generate_sitemap.js
+
+      - name: Commit and Push Updated Catalog & Sitemap
         run: |
           git config --global user.name "github-actions[bot]"
           git config --global user.email "github-actions[bot]@users.noreply.github.com"
-          git add sample_videos.json checkpoint_urls.json || true
-          git diff --quiet && git diff --staged --quiet || (git commit -m "chore: auto-update video catalog and stream URLs [skip ci]" && git push)
+          git add sample_videos.json checkpoint_urls.json sitemap.xml robots.txt || true
+          git diff --quiet && git diff --staged --quiet || (git commit -m "chore: auto-update video catalog, stream URLs & Google sitemap [skip ci]" && git push)

@@ -64,8 +64,8 @@ async function initWatchPage() {
     currentVideo = catalogData[0];
   }
 
-  // Set Page Title
-  document.title = `${currentVideo.title} - HotTube`;
+  // Apply Complete SEO Keyword Stacking, OpenGraph Tags & JSON-LD VideoObject Schema
+  applySeoMetadata(currentVideo);
 
   // Render Video Information
   watchTitle.textContent = currentVideo.title;
@@ -83,6 +83,89 @@ async function initWatchPage() {
 
   // Render Category Based Recommended Videos
   renderRecommendations(currentVideo);
+}
+
+/**
+ * Dynamically Apply SEO Metadata, Canonical Links, Social Meta Tags & Google JSON-LD Schema
+ */
+function applySeoMetadata(video) {
+  if (!video) return;
+
+  const pageTitle = `${video.title} feat. ${video.channel || 'HotTube Creator'} – ${video.category || 'Trending'}, Desi, Indian, HD Video | HotTube`;
+  const pageDesc = `Watch ${video.title} video. Channel: ${video.channel || 'HotTube Creator'}. Category: ${video.category || 'Trending'}, HD Streaming. Enjoy full-length HD video on HotTube!`;
+  const pageUrl = `https://hottube.devendradubey61.workers.dev/watch.html?id=${encodeURIComponent(video.id)}`;
+  const imageUrl = video.poster_url || video.thumbnail_url || 'https://hottube.devendradubey61.workers.dev/icon.png';
+
+  // 1. Page Title & Meta Description
+  document.title = pageTitle;
+  let metaDesc = document.querySelector('meta[name="description"]');
+  if (!metaDesc) {
+    metaDesc = document.createElement('meta');
+    metaDesc.name = 'description';
+    document.head.appendChild(metaDesc);
+  }
+  metaDesc.content = pageDesc;
+
+  // 2. Canonical URL
+  const canonicalEl = document.getElementById('canonicalUrl');
+  if (canonicalEl) canonicalEl.href = pageUrl;
+
+  // 3. OpenGraph Social Meta Tags
+  const setMetaProp = (id, prop, content) => {
+    let el = document.getElementById(id) || document.querySelector(`meta[property="${prop}"]`);
+    if (el) el.setAttribute('content', content);
+  };
+  setMetaProp('ogSiteName', 'og:site_name', 'HotTube');
+  setMetaProp('ogType', 'og:type', 'video.other');
+  setMetaProp('ogTitle', 'og:title', pageTitle);
+  setMetaProp('ogDescription', 'og:description', pageDesc);
+  setMetaProp('ogImage', 'og:image', imageUrl);
+  setMetaProp('ogUrl', 'og:url', pageUrl);
+
+  // 4. Twitter Cards
+  const setMetaName = (id, name, content) => {
+    let el = document.getElementById(id) || document.querySelector(`meta[name="${name}"]`);
+    if (el) el.setAttribute('content', content);
+  };
+  setMetaName('twitterCard', 'twitter:card', 'summary_large_image');
+  setMetaName('twitterSite', 'twitter:site', '@hottubemedia');
+  setMetaName('twitterTitle', 'twitter:title', pageTitle);
+  setMetaName('twitterDescription', 'twitter:description', pageDesc);
+  setMetaName('twitterImage', 'twitter:image', imageUrl);
+
+  // 5. Google JSON-LD VideoObject Structured Data Schema
+  const schemaScript = document.getElementById('jsonLdVideoSchema');
+  if (schemaScript) {
+    const durationParts = (video.duration || '10:00').split(':').map(Number);
+    let isoDuration = 'PT10M0S';
+    if (durationParts.length === 2) {
+      isoDuration = `PT${durationParts[0]}M${durationParts[1]}S`;
+    } else if (durationParts.length === 3) {
+      isoDuration = `PT${durationParts[0]}H${durationParts[1]}M${durationParts[2]}S`;
+    }
+
+    const jsonLdData = {
+      "@context": "https://schema.org",
+      "@type": "VideoObject",
+      "name": video.title,
+      "description": pageDesc,
+      "thumbnailUrl": [imageUrl],
+      "uploadDate": "2026-09-13T00:00:00+00:00",
+      "duration": isoDuration,
+      "contentUrl": video.video_stream_url || pageUrl,
+      "embedUrl": pageUrl,
+      "publisher": {
+        "@type": "Organization",
+        "name": "HotTube",
+        "logo": {
+          "@type": "ImageObject",
+          "url": "https://ui-avatars.com/api/?name=HotTube&background=FF1E4B&color=fff"
+        }
+      }
+    };
+    schemaScript.textContent = JSON.stringify(jsonLdData, null, 2);
+  }
+}
 
   // Search input redirect
   if (searchInput) {
