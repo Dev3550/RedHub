@@ -177,54 +177,15 @@ function applySeoMetadata(video) {
   }
 
 /**
- * Switch Player UI between Native Video Player and Sandboxed iFrame Embed Player
- */
-function switchPlayerMode(embed) {
-  isEmbedMode = embed;
-  
-  if (isEmbedMode) {
-    if (hlsVideoPlayer) {
-      hlsVideoPlayer.pause();
-      hlsVideoPlayer.classList.add('hidden');
-    }
-    if (embedVideoPlayer) {
-      embedVideoPlayer.classList.remove('hidden');
-      
-      let embedSrc = currentVideo.embed_url || currentVideo.page_url || currentVideo.video_stream_url;
-      if (embedVideoPlayer.src !== embedSrc) {
-        embedVideoPlayer.src = embedSrc;
-      }
-    }
-    if (playerLoader) playerLoader.classList.add('hidden');
-  } else {
-    if (embedVideoPlayer) {
-      embedVideoPlayer.src = 'about:blank';
-      embedVideoPlayer.classList.add('hidden');
-    }
-    if (hlsVideoPlayer) {
-      hlsVideoPlayer.classList.remove('hidden');
-    }
-    loadHlsStream(currentVideo.video_stream_url);
-  }
-}
-
-/**
- * Load Smart Video Stream with Sandboxed Embed Fallback on Fatal Error
+ * Load Smart Video Stream directly into HotTube Video Player
  */
 function loadSmartVideoStream(video) {
   const streamUrl = video.video_stream_url;
-  
-  if (!streamUrl || isEmbedMode) {
-    switchPlayerMode(true);
+  if (!streamUrl) {
+    console.warn('No stream URL available for video ID:', video.id);
+    if (playerLoader) playerLoader.classList.add('hidden');
     return;
   }
-
-  // Native player error listener: switch to sandboxed iframe embed if direct load errors
-  hlsVideoPlayer.onerror = () => {
-    console.warn('Native video error detected. Switching to Sandboxed Embed Player...');
-    switchPlayerMode(true);
-  };
-
   loadHlsStream(streamUrl);
 }
 
@@ -298,10 +259,7 @@ function loadHlsStream(streamUrl) {
     hlsInstance = null;
   }
 
-  if (!streamUrl) {
-    switchPlayerMode(true);
-    return;
-  }
+  if (!streamUrl) return;
 
   // Direct MP4 playback in Native HTML5 Video Player
   if (streamUrl.includes('.mp4')) {
@@ -320,7 +278,6 @@ function loadHlsStream(streamUrl) {
     }).catch(e => {
       if (playerLoader) playerLoader.classList.add('hidden');
       console.warn('Native MP4 play catch:', e.message);
-      switchPlayerMode(true);
     });
     return;
   }
@@ -363,8 +320,21 @@ function loadHlsStream(streamUrl) {
       if (data.fatal) {
         console.error('HLS Fatal Error detected:', data.type, data.details);
         if (playerLoader) playerLoader.classList.add('hidden');
-        // Fallback to Sandboxed Embed Mode on expired/stuck stream token
-        switchPlayerMode(true);
+        
+        // Native HLS.js Auto-Recovery
+        switch (data.type) {
+          case Hls.ErrorTypes.NETWORK_ERROR:
+            console.warn('Network error encountered, attempting reload...');
+            hlsInstance.startLoad();
+            break;
+          case Hls.ErrorTypes.MEDIA_ERROR:
+            console.warn('Media error encountered, attempting recovery...');
+            hlsInstance.recoverMediaError();
+            break;
+          default:
+            hlsInstance.destroy();
+            break;
+        }
       }
     });
 
