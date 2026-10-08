@@ -189,67 +189,8 @@ function loadSmartVideoStream(video) {
   loadHlsStream(streamUrl);
 }
 
-// Global Configurable VAST Ad Tag URL (Can be set by publisher/user via window.VAST_AD_URL)
-window.VAST_AD_URL = window.VAST_AD_URL || 'https://pubads.g.doubleclick.net/gampad/ads?iu=/21775744923/external/single_ad_samples&sz=640x480&cust_params=sample_ct%3Dlinear&ciu_szs=300x250%2C728x90&gdfp_req=1&output=vast&unviewed_position_start=1&env=vp&impl=s&correlator=';
-
-let fluidPlayerInstance = null;
-
 /**
- * Initialize VAST / VPAID Compliant Fluid Player
- */
-function initFluidVastPlayer(streamUrl) {
-  if (typeof fluidPlayer === 'undefined') return false;
-
-  if (fluidPlayerInstance) {
-    try { fluidPlayerInstance.destroy(); } catch (_) {}
-    fluidPlayerInstance = null;
-  }
-
-  try {
-    fluidPlayerInstance = fluidPlayer('hlsVideoPlayer', {
-      layoutControls: {
-        primaryColor: '#FF1E4B',
-        posterImage: currentVideo ? (currentVideo.poster_url || currentVideo.thumbnail_url) : '',
-        autoPlay: true,
-        playButtonShowing: true,
-        playPauseAnimation: true,
-        mute: false,
-        keyboardControl: true,
-        allowDownload: false,
-        playbackRateEnabled: true,
-        allowTheatre: true,
-        logo: {
-          imageUrl: '',
-          position: 'top right',
-          opacity: 0.8
-        }
-      },
-      vastOptions: {
-        adList: [
-          {
-            roll: 'preRoll',
-            vastTag: window.VAST_AD_URL,
-            timer: 5
-          }
-        ],
-        skipButtonCaption: 'Skip Ad in [seconds]',
-        skipButtonClickCaption: 'Skip Ad ➔',
-        adText: 'Advertisement',
-        adTextPosition: 'top left',
-        adCTAText: 'Visit Advertiser ➔',
-        adCTATextPosition: 'bottom right'
-      }
-    });
-    console.log('🚀 Fluid Player VAST Ad Engine Initialized!');
-    return true;
-  } catch (err) {
-    console.warn('Fluid Player VAST init fallback:', err.message);
-    return false;
-  }
-}
-
-/**
- * Load HLS Stream via HLS.js or Native HTML5 Video with VAST Ad Engine
+ * Load HLS Stream via HLS.js or Native HTML5 Video Player
  */
 function loadHlsStream(streamUrl) {
   if (playerLoader) playerLoader.classList.remove('hidden');
@@ -271,8 +212,6 @@ function loadHlsStream(streamUrl) {
     };
     hlsVideoPlayer.addEventListener('loadeddata', onLoaded);
     
-    initFluidVastPlayer(streamUrl);
-
     hlsVideoPlayer.play().then(() => {
       if (playerLoader) playerLoader.classList.add('hidden');
     }).catch(e => {
@@ -282,7 +221,7 @@ function loadHlsStream(streamUrl) {
     return;
   }
 
-  // HLS Stream (.m3u8) playback via HLS.js with VAST Player Engine
+  // HLS Stream (.m3u8) playback via HLS.js with Mobile Ultra-Smooth Buffer Optimization
   if (Hls.isSupported() && streamUrl.includes('.m3u8')) {
     hlsInstance = new Hls({
       enableWorker: true,
@@ -309,9 +248,6 @@ function loadHlsStream(streamUrl) {
       // Dynamically populate resolution quality dropdown from manifest levels
       populateQualityDropdown(data.levels);
 
-      // Initialize VAST Player Engine
-      initFluidVastPlayer(streamUrl);
-
       // Start playing immediately
       hlsVideoPlayer.play().catch(e => console.warn('Autoplay prevented:', e.message));
     });
@@ -321,7 +257,6 @@ function loadHlsStream(streamUrl) {
         console.error('HLS Fatal Error detected:', data.type, data.details);
         if (playerLoader) playerLoader.classList.add('hidden');
         
-        // Native HLS.js Auto-Recovery
         switch (data.type) {
           case Hls.ErrorTypes.NETWORK_ERROR:
             console.warn('Network error encountered, attempting reload...');
@@ -345,11 +280,9 @@ function loadHlsStream(streamUrl) {
       if (playerLoader) playerLoader.classList.add('hidden');
       hlsVideoPlayer.play().catch(_ => {});
     });
-    initFluidVastPlayer(streamUrl);
     if (playerLoader) playerLoader.classList.add('hidden');
   } else {
     hlsVideoPlayer.src = streamUrl;
-    initFluidVastPlayer(streamUrl);
     hlsVideoPlayer.addEventListener('loadedmetadata', () => {
       if (playerLoader) playerLoader.classList.add('hidden');
       hlsVideoPlayer.play().catch(_ => {});
