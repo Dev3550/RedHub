@@ -175,7 +175,6 @@ function applySeoMetadata(video) {
       }
     });
   }
-}
 
 /**
  * Switch Player UI between Native Video Player and Sandboxed iFrame Embed Player
