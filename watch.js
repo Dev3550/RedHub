@@ -43,7 +43,7 @@ async function initWatchPage() {
   const videoId = urlParams.get('id');
 
   try {
-    const res = await fetch('./sample_videos.json');
+    const res = await fetch('./sample_videos.json?v=' + Date.now(), { cache: 'no-cache' });
     if (res.ok) {
       catalogData = await res.json();
     } else {
@@ -369,10 +369,18 @@ function loadHlsStream(streamUrl) {
       }
     });
 
+  } else if (hlsVideoPlayer.canPlayType('application/vnd.apple.mpegurl') && streamUrl.includes('.m3u8')) {
+    // Native HLS Player for Mobile Safari (iPhone / iPad)
+    hlsVideoPlayer.src = streamUrl;
+    hlsVideoPlayer.addEventListener('loadedmetadata', () => {
+      if (playerLoader) playerLoader.classList.add('hidden');
+      hlsVideoPlayer.play().catch(_ => {});
+    });
+    initFluidVastPlayer(streamUrl);
+    if (playerLoader) playerLoader.classList.add('hidden');
   } else {
     hlsVideoPlayer.src = streamUrl;
     initFluidVastPlayer(streamUrl);
-
     hlsVideoPlayer.addEventListener('loadedmetadata', () => {
       if (playerLoader) playerLoader.classList.add('hidden');
       hlsVideoPlayer.play().catch(_ => {});

@@ -104,7 +104,7 @@ async function initApp() {
   updateItemsPerPage();
 
   try {
-    const res = await fetch('./sample_videos.json');
+    const res = await fetch('./sample_videos.json?v=' + Date.now(), { cache: 'no-cache' });
     if (res.ok) {
       videosData = await res.json();
     } else {
