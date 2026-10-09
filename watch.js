@@ -234,26 +234,53 @@ function loadHlsStream(streamUrl) {
   const bigPlayBtn = document.getElementById('bigPlayBtn');
 
   const startPlayback = () => {
-    hlsVideoPlayer.play().then(() => {
-      if (playerLoader) playerLoader.classList.add('hidden');
-      if (bigPlayBtn) bigPlayBtn.style.display = 'none';
-    }).catch(err => {
-      if (playerLoader) playerLoader.classList.add('hidden');
-      if (bigPlayBtn) bigPlayBtn.style.display = 'flex';
-      console.warn('User gesture required for playback:', err.message);
-    });
+    if (!hlsVideoPlayer) return;
+
+    const playPromise = hlsVideoPlayer.play();
+    if (playPromise !== undefined) {
+      playPromise.then(() => {
+        if (playerLoader) playerLoader.classList.add('hidden');
+        if (bigPlayBtn) bigPlayBtn.style.display = 'none';
+      }).catch(err => {
+        console.warn('Unmuted play blocked by browser, attempting muted autoplay fallback:', err.message);
+        // Fallback: Mute & play to bypass aggressive mobile browser autoplay restrictions
+        hlsVideoPlayer.muted = true;
+        hlsVideoPlayer.play().then(() => {
+          if (playerLoader) playerLoader.classList.add('hidden');
+          if (bigPlayBtn) bigPlayBtn.style.display = 'none';
+        }).catch(err2 => {
+          console.warn('Muted play also required user gesture:', err2.message);
+          if (playerLoader) playerLoader.classList.add('hidden');
+          if (bigPlayBtn) bigPlayBtn.style.display = 'flex';
+        });
+      });
+    }
   };
 
   if (bigPlayBtn) {
-    bigPlayBtn.onclick = (e) => {
-      e.stopPropagation();
+    const handleBigPlay = (e) => {
+      if (e) e.stopPropagation();
+      hlsVideoPlayer.muted = false; // Unmute on explicit user gesture
       startPlayback();
     };
+    bigPlayBtn.onclick = handleBigPlay;
+    bigPlayBtn.ontouchstart = handleBigPlay;
   }
 
   hlsVideoPlayer.onplay = () => {
     if (bigPlayBtn) bigPlayBtn.style.display = 'none';
     if (playerLoader) playerLoader.classList.add('hidden');
+    if (typeof window.closePauseAd === 'function') {
+      window.closePauseAd();
+    }
+  };
+
+  hlsVideoPlayer.onpause = () => {
+    if (!hlsVideoPlayer.ended && adHasPlayed && hlsVideoPlayer.currentTime > 1) {
+      if (typeof window.showPauseAd === 'function') {
+        window.showPauseAd();
+      }
+    }
   };
 
   // Direct MP4 playback in Native HTML5 Video Player
@@ -668,6 +695,11 @@ function closePauseAd() {
   const pauseBannerLayer = document.getElementById('pauseBannerLayer');
   if (pauseBannerLayer) pauseBannerLayer.style.display = "none";
 }
+
+// Expose functions globally for inline HTML event handlers
+window.showPauseAd = showPauseAd;
+window.closePauseAd = closePauseAd;
+
 
 
 
