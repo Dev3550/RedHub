@@ -1,0 +1,49 @@
+name: Mobile AI Agent (Gemini Auto-Coder)
+
+on:
+  issues:
+    types: [opened, edited]
+  issue_comment:
+    types: [created]
+  workflow_dispatch:
+    inputs:
+      instruction:
+        description: 'Code edit instruction for Gemini AI'
+        required: true
+        type: string
+
+jobs:
+  ai-code-edit:
+    if: ${{ !github.event.issue.pull_request }}
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+      issues: write
+
+    steps:
+      - name: Checkout Code
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+
+      - name: Run Gemini Mobile AI Agent
+        env:
+          GEMINI_API_KEY: ${{ secrets.GEMINI_API_KEY }}
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          EVENT_NAME: ${{ github.event_name }}
+          ISSUE_NUMBER: ${{ github.event.issue.number }}
+          ISSUE_TITLE: ${{ github.event.issue.title }}
+          ISSUE_BODY: ${{ github.event.issue.body }}
+          COMMENT_BODY: ${{ github.event.comment.body }}
+          MANUAL_INSTRUCTION: ${{ inputs.instruction }}
+        run: node .github/scripts/ai_agent.js
+
+      - name: Commit and Push Changes to Main
+        run: |
+          git config --global user.name "gemini-mobile-agent[bot]"
+          git config --global user.email "gemini-mobile-agent[bot]@users.noreply.github.com"
+          git add -A
+          git diff --quiet && git diff --staged --quiet || (git commit -m "feat(ai-agent): auto-update codebase from mobile instruction [skip ci]" && git push origin main)
