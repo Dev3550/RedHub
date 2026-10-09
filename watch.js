@@ -226,24 +226,40 @@ function loadHlsStream(streamUrl) {
     hlsInstance = null;
   }
 
-  if (!streamUrl) return;
+  if (!streamUrl) {
+    if (playerLoader) playerLoader.classList.add('hidden');
+    return;
+  }
+
+  const bigPlayBtn = document.getElementById('bigPlayBtn');
+
+  const startPlayback = () => {
+    hlsVideoPlayer.play().then(() => {
+      if (playerLoader) playerLoader.classList.add('hidden');
+      if (bigPlayBtn) bigPlayBtn.style.display = 'none';
+    }).catch(err => {
+      if (playerLoader) playerLoader.classList.add('hidden');
+      if (bigPlayBtn) bigPlayBtn.style.display = 'flex';
+      console.warn('User gesture required for playback:', err.message);
+    });
+  };
+
+  if (bigPlayBtn) {
+    bigPlayBtn.onclick = (e) => {
+      e.stopPropagation();
+      startPlayback();
+    };
+  }
+
+  hlsVideoPlayer.onplay = () => {
+    if (bigPlayBtn) bigPlayBtn.style.display = 'none';
+    if (playerLoader) playerLoader.classList.add('hidden');
+  };
 
   // Direct MP4 playback in Native HTML5 Video Player
   if (streamUrl.includes('.mp4')) {
     hlsVideoPlayer.src = streamUrl;
-    
-    const onLoaded = () => {
-      if (playerLoader) playerLoader.classList.add('hidden');
-      hlsVideoPlayer.removeEventListener('loadeddata', onLoaded);
-    };
-    hlsVideoPlayer.addEventListener('loadeddata', onLoaded);
-    
-    hlsVideoPlayer.play().then(() => {
-      if (playerLoader) playerLoader.classList.add('hidden');
-    }).catch(e => {
-      if (playerLoader) playerLoader.classList.add('hidden');
-      console.warn('Native MP4 play catch:', e.message);
-    });
+    startPlayback();
     return;
   }
 
@@ -269,13 +285,13 @@ function loadHlsStream(streamUrl) {
 
     hlsInstance.on(Hls.Events.MANIFEST_PARSED, (event, data) => {
       if (playerLoader) playerLoader.classList.add('hidden');
-      console.log('HLS Manifest Parsed! Available Quality Levels:', data.levels);
+      console.log('HLS Manifest Parsed! Available Quality Levels:', data ? data.levels : []);
 
-      // Dynamically populate resolution quality dropdown from manifest levels
-      populateQualityDropdown(data.levels);
+      if (data && data.levels) {
+        populateQualityDropdown(data.levels);
+      }
 
-      // Start playing immediately
-      hlsVideoPlayer.play().catch(e => console.warn('Autoplay prevented:', e.message));
+      startPlayback();
     });
 
     hlsInstance.on(Hls.Events.ERROR, (event, data) => {
@@ -294,26 +310,16 @@ function loadHlsStream(streamUrl) {
             break;
           default:
             hlsInstance.destroy();
+            hlsVideoPlayer.src = streamUrl;
+            startPlayback();
             break;
         }
       }
     });
 
-  } else if (hlsVideoPlayer.canPlayType('application/vnd.apple.mpegurl') && streamUrl.includes('.m3u8')) {
-    // Native HLS Player for Mobile Safari (iPhone / iPad)
-    hlsVideoPlayer.src = streamUrl;
-    hlsVideoPlayer.addEventListener('loadedmetadata', () => {
-      if (playerLoader) playerLoader.classList.add('hidden');
-      hlsVideoPlayer.play().catch(_ => {});
-    });
-    if (playerLoader) playerLoader.classList.add('hidden');
   } else {
     hlsVideoPlayer.src = streamUrl;
-    hlsVideoPlayer.addEventListener('loadedmetadata', () => {
-      if (playerLoader) playerLoader.classList.add('hidden');
-      hlsVideoPlayer.play().catch(_ => {});
-    });
-    if (playerLoader) playerLoader.classList.add('hidden');
+    startPlayback();
   }
 }
 

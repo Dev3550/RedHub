@@ -102,6 +102,13 @@
       <div class="watch-player-wrapper" style="position: relative;">
         <video id="hlsVideoPlayer" controls playsinline preload="auto" poster=""></video>
         
+        <!-- Big Center Play Button Trigger (100% Mobile & Desktop Autoplay Fail-safe) -->
+        <div id="bigPlayBtn" style="position: absolute; inset: 0; z-index: 15; display: flex; align-items: center; justify-content: center; background: rgba(0, 0, 0, 0.4); cursor: pointer; backdrop-filter: blur(2px); transition: opacity 0.3s ease;">
+          <div style="width: 76px; height: 76px; border-radius: 50%; background: var(--accent-gradient); display: flex; align-items: center; justify-content: center; box-shadow: 0 0 30px rgba(255, 0, 127, 0.85); border: 2px solid rgba(255,255,255,0.4);">
+            <i class="fa-solid fa-play" style="color: #fff; font-size: 2rem; margin-left: 5px;"></i>
+          </div>
+        </div>
+
         <!-- Custom ExoClick VAST Pre-Roll Ad Overlay -->
         <div id="vastAdOverlay" class="hidden" style="position: absolute; inset: 0; z-index: 20; background: #000; display: flex; flex-direction: column; justify-content: space-between; padding: 12px; box-sizing: border-box; pointer-events: auto;">
           <div style="display: flex; justify-content: space-between; align-items: center; width: 100%;">
