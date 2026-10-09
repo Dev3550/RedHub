@@ -7,7 +7,8 @@ const BASE_URL = 'https://exotichub.freeerentalagreement.com';
 
 function escapeXml(unsafe) {
   if (!unsafe) return '';
-  return unsafe
+  return String(unsafe)
+    .replace(/[\x00-\x08\x0B\x0C\x0E-\x1F\x7F-\x9F]/g, '')
     .replace(/&/g, '&amp;')
     .replace(/</g, '&lt;')
     .replace(/>/g, '&gt;')
@@ -17,10 +18,10 @@ function escapeXml(unsafe) {
 
 function parseDurationSeconds(durStr) {
   if (!durStr) return 600; // default 10 mins
-  const parts = durStr.split(':').map(Number);
-  if (parts.length === 2) {
+  const parts = String(durStr).split(':').map(Number);
+  if (parts.length === 2 && !isNaN(parts[0]) && !isNaN(parts[1])) {
     return (parts[0] * 60) + parts[1];
-  } else if (parts.length === 3) {
+  } else if (parts.length === 3 && !isNaN(parts[0]) && !isNaN(parts[1]) && !isNaN(parts[2])) {
     return (parts[0] * 3600) + (parts[1] * 60) + parts[2];
   }
   return 600;
@@ -58,8 +59,9 @@ function generateSitemap() {
 
   // 2. Top Category Pages
   for (const cat of categories) {
+    const catUrl = escapeXml(`${BASE_URL}/index.html?category=${encodeURIComponent(cat)}`);
     xml += `  <url>\n`;
-    xml += `    <loc>${BASE_URL}/index.html?category=${encodeURIComponent(cat)}</loc>\n`;
+    xml += `    <loc>${catUrl}</loc>\n`;
     xml += `    <changefreq>daily</changefreq>\n`;
     xml += `    <priority>0.8</priority>\n`;
     xml += `  </url>\n\n`;
@@ -67,13 +69,21 @@ function generateSitemap() {
 
   // 3. Video Detail Watch Pages with Google Video Schema
   for (const item of catalog) {
-    const watchUrl = `${BASE_URL}/watch.html?id=${encodeURIComponent(item.id)}`;
-    const title = escapeXml(item.title);
+    const rawWatchUrl = `${BASE_URL}/watch.html?id=${encodeURIComponent(item.id)}`;
+    const watchUrl = escapeXml(rawWatchUrl);
+    const title = escapeXml(item.title || 'ExoticHub HD Video');
     const category = escapeXml(item.category || 'Trending');
     const channel = escapeXml(item.channel || 'ExoticHub Creator');
-    const description = escapeXml(`Watch ${item.title} video. Channel: ${item.channel || 'ExoticHub Creator'}. Category: ${item.category || 'Trending'}. Stream HD videos online on ExoticHub.`);
-    const thumbnailUrl = escapeXml(item.poster_url || item.thumbnail_url);
-    const streamUrl = escapeXml(item.video_stream_url);
+    const description = escapeXml(`Watch ${item.title || 'HD Video'} on ExoticHub. High speed HLS streaming in ${item.category || 'Trending'} category.`);
+    
+    let rawThumb = item.poster_url || item.thumbnail_url || `${BASE_URL}/icon.png`;
+    if (rawThumb.startsWith('//')) rawThumb = 'https:' + rawThumb;
+    const thumbnailUrl = escapeXml(rawThumb);
+
+    let rawStream = item.video_stream_url;
+    if (rawStream && rawStream.startsWith('//')) rawStream = 'https:' + rawStream;
+    const streamUrl = rawStream ? escapeXml(rawStream) : null;
+    
     const durationSec = parseDurationSeconds(item.duration);
 
     xml += `  <url>\n`;
@@ -87,7 +97,7 @@ function generateSitemap() {
     if (streamUrl) {
       xml += `      <video:content_loc>${streamUrl}</video:content_loc>\n`;
     }
-    xml += `      <video:player_loc>${watchUrl}</video:player_loc>\n`;
+    xml += `      <video:player_loc allow_embed="yes">${watchUrl}</video:player_loc>\n`;
     xml += `      <video:duration>${durationSec}</video:duration>\n`;
     xml += `      <video:publication_date>2026-09-13T00:00:00+00:00</video:publication_date>\n`;
     xml += `      <video:category>${category}</video:category>\n`;
