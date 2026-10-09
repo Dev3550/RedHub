@@ -3,19 +3,22 @@
    ========================================================================== */
 
 :root {
-  --bg-dark: #0b0d14;
-  --bg-card: #141824;
-  --bg-card-hover: #1c2233;
-  --bg-navbar: rgba(11, 13, 20, 0.85);
-  --accent-primary: #ff1e4b;
-  --accent-gradient: linear-gradient(135deg, #ff1e4b 0%, #ff523b 100%);
-  --text-main: #f3f4f6;
-  --text-muted: #9ca3af;
-  --text-dim: #6b7280;
-  --border-color: rgba(255, 255, 255, 0.08);
-  --glass-bg: rgba(20, 24, 36, 0.7);
-  --shadow-lg: 0 12px 32px rgba(0, 0, 0, 0.5);
-  --shadow-glow: 0 0 20px rgba(255, 30, 75, 0.35);
+  --bg-dark: #08090f;
+  --bg-card: #12141f;
+  --bg-card-hover: #1c1f30;
+  --bg-navbar: rgba(9, 10, 15, 0.92);
+  --accent-primary: #ff007f;
+  --accent-secondary: #c026d3;
+  --accent-light: #ff52a5;
+  --accent-gradient: linear-gradient(135deg, #ff007f 0%, #ff2a8d 50%, #c026d3 100%);
+  --accent-hover: linear-gradient(135deg, #ff2a8d 0%, #ff007f 50%, #d9006c 100%);
+  --text-main: #f8fafc;
+  --text-muted: #94a3b8;
+  --text-dim: #64748b;
+  --border-color: rgba(255, 0, 127, 0.16);
+  --glass-bg: rgba(18, 20, 31, 0.75);
+  --shadow-lg: 0 16px 36px rgba(0, 0, 0, 0.65);
+  --shadow-glow: 0 0 25px rgba(255, 0, 127, 0.5);
   --radius-sm: 8px;
   --radius-md: 14px;
   --radius-lg: 20px;
@@ -30,6 +33,9 @@
 
 body {
   background-color: var(--bg-dark);
+  background-image: 
+    radial-gradient(circle at 15% 15%, rgba(255, 0, 127, 0.08) 0%, transparent 45%),
+    radial-gradient(circle at 85% 70%, rgba(192, 38, 211, 0.06) 0%, transparent 45%);
   color: var(--text-main);
   font-family: var(--font-family);
   min-height: 100vh;
@@ -93,21 +99,47 @@ body {
 .logo {
   display: flex;
   align-items: center;
-  gap: 10px;
-  font-size: 1.5rem;
-  font-weight: 800;
-  color: var(--text-main);
+  gap: 12px;
   text-decoration: none;
-  letter-spacing: -0.5px;
 }
 
-.logo-icon {
-  color: var(--accent-primary);
-  font-size: 1.8rem;
+.logo-badge {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 40px;
+  height: 40px;
+  background: linear-gradient(135deg, #ff007f 0%, #d9006c 100%);
+  color: #ffffff;
+  font-weight: 900;
+  font-size: 1.15rem;
+  font-style: italic;
+  border-radius: 10px;
+  box-shadow: 0 0 20px rgba(255, 0, 127, 0.65), inset 0 1px 1px rgba(255, 255, 255, 0.4);
+  border: 1px solid rgba(255, 255, 255, 0.25);
+  letter-spacing: -1px;
+  transition: all 0.3s cubic-bezier(0.34, 1.56, 0.64, 1);
+}
+
+.logo:hover .logo-badge {
+  transform: scale(1.1) rotate(-5deg);
+  box-shadow: 0 0 30px rgba(255, 0, 127, 0.9);
+}
+
+.logo-text {
+  font-size: 1.5rem;
+  font-weight: 900;
+  font-style: italic;
+  letter-spacing: -0.5px;
+  color: #ffffff;
+  text-transform: uppercase;
 }
 
 .logo-accent {
-  color: var(--accent-primary);
+  background: linear-gradient(135deg, #ff007f 0%, #ff529a 100%);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  padding-left: 2px;
 }
 
 .search-box {
@@ -141,7 +173,7 @@ body {
 .search-box input:focus {
   background: rgba(255, 255, 255, 0.08);
   border-color: var(--accent-primary);
-  box-shadow: 0 0 12px rgba(255, 30, 75, 0.2);
+  box-shadow: 0 0 16px rgba(255, 0, 127, 0.35);
 }
 
 .clear-btn {
@@ -248,8 +280,8 @@ body {
 }
 
 @keyframes pulse-glow {
-  0%, 100% { box-shadow: 0 0 10px rgba(255, 30, 75, 0.4); }
-  50% { box-shadow: 0 0 20px rgba(255, 30, 75, 0.8); }
+  0%, 100% { box-shadow: 0 0 12px rgba(255, 0, 127, 0.5); }
+  50% { box-shadow: 0 0 25px rgba(255, 0, 127, 0.85); }
 }
 
 .trending-heading {
