@@ -1259,3 +1259,32 @@ body {
   font-weight: 600;
 }
 
+/* ==========================================================================
+   ExoClick Ad Device Targeting Utilities
+   ========================================================================== */
+
+/* Mobile View: hide desktop/tablet ads, show mobile ads */
+@media (max-width: 767px) {
+  .desktop-only-ad,
+  .tablet-desktop-ad {
+    display: none !important;
+  }
+  .mobile-only-ad {
+    display: block !important;
+  }
+}
+
+/* Tablet & Desktop View: show desktop/tablet ads, hide mobile-only ads */
+@media (min-width: 768px) {
+  .mobile-only-ad {
+    display: none !important;
+  }
+  .tablet-desktop-ad {
+    display: block !important;
+  }
+  .desktop-only-ad {
+    display: block !important;
+  }
+}
+
+
