@@ -456,9 +456,10 @@ function escapeHtml(str) {
 }
 
 // ==========================================================================
-// ExoClick VAST 2.0/3.0/4.0 In-Video Ads Integration (Zone ID: 6051448)
+// ExoClick High-CPM In-Stream & VAST Ads Integration (Zone ID: 6051450 & 6051448)
 // ==========================================================================
-const VAST_TAG_URL = 'https://s.magsrv.com/v1/vast.php?idz=6051448';
+const PRIMARY_INSTREAM_VAST_URL = 'https://s.magsrv.com/v1/vast.php?idz=6051450';
+const FALLBACK_INVIDEO_VAST_URL = 'https://s.magsrv.com/v1/vast.php?idz=6051448';
 let adsManager = null;
 let adsLoader = null;
 let adDisplayContainer = null;
@@ -496,16 +497,16 @@ function setupExoClickVastAds() {
       }
     }, { once: true });
 
-    requestVastAds();
+    requestVastAds(PRIMARY_INSTREAM_VAST_URL);
   } catch (err) {
     console.warn('ExoClick VAST initialization exception:', err);
   }
 }
 
-function requestVastAds() {
+function requestVastAds(vastUrl) {
   if (!adsLoader) return;
   const adsRequest = new google.ima.AdsRequest();
-  adsRequest.adTagUrl = VAST_TAG_URL;
+  adsRequest.adTagUrl = vastUrl || PRIMARY_INSTREAM_VAST_URL;
   adsRequest.linearAdSlotWidth = hlsVideoPlayer.clientWidth || 640;
   adsRequest.linearAdSlotHeight = hlsVideoPlayer.clientHeight || 360;
   adsRequest.nonLinearAdSlotWidth = hlsVideoPlayer.clientWidth || 640;
@@ -538,9 +539,17 @@ function onAdsManagerLoaded(adsManagerLoadedEvent) {
   }
 }
 
+let vastTriedFallback = false;
 function onAdError(adErrorEvent) {
   console.log('ExoClick VAST Info:', adErrorEvent.getError ? adErrorEvent.getError() : adErrorEvent);
-  if (adsManager) adsManager.destroy();
+  if (adsManager) {
+    try { adsManager.destroy(); } catch(_) {}
+  }
+  if (!vastTriedFallback) {
+    vastTriedFallback = true;
+    console.log('Trying Fallback VAST Tag 6051448...');
+    requestVastAds(FALLBACK_INVIDEO_VAST_URL);
+  }
 }
 
 document.addEventListener('DOMContentLoaded', () => {
