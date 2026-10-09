@@ -78,10 +78,8 @@ async function initWatchPage() {
   // Setup Resolution Quality Dropdown Listener
   setupQualityControls();
 
-  // Initialize Native HLS / Video Stream with ExoClick Custom VAST Pre-Roll
-  playCustomVastPreRoll(currentVideo, () => {
-    loadSmartVideoStream(currentVideo);
-  });
+  // Initialize Native HLS / Video Stream directly
+  loadSmartVideoStream(currentVideo);
 
   // Render Category Based Recommended Videos
   renderRecommendations(currentVideo);
@@ -478,175 +476,12 @@ function escapeHtml(str) {
   return str.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;");
 }
 
-// ==========================================================================
-// Custom ExoClick VAST 4.3 Pre-Roll & Pause Ad Player Engine
-// ==========================================================================
-const VAST_URLS = [
-  "https://s.magsrv.com/v1/vast.php?idz=6050694",
-  "https://s.magsrv.com/v1/vast.php?idz=6051450",
-  "https://s.magsrv.com/v1/vast.php?idz=6051448"
-];
+// Video Pause Ad Integration (Zone 6049564)
 const PAUSE_ZONE_ID = "6049564";
-const SKIP_COUNTDOWN = 6;
 
-let adHasPlayed = false;
-let skipTimer = null;
-let trackingEvents = { impressions: [], tracking: [], clickThrough: null };
-
-function firePixel(url) {
-  if (!url) return;
-  const img = new Image();
-  img.src = url.trim();
-}
-
-async function loadVastAd() {
-  for (let url of VAST_URLS) {
-    try {
-      const response = await fetch(url).catch(() => null);
-      if (!response) continue;
-      const text = await response.text().catch(() => null);
-      if (!text || !text.includes('<MediaFile')) continue;
-
-      const parser = new DOMParser();
-      const xml = parser.parseFromString(text, "text/xml");
-
-      const mediaFiles = xml.querySelectorAll("MediaFile");
-      let adMediaUrl = null;
-      for (let mf of mediaFiles) {
-        const src = (mf.textContent || '').trim();
-        if (src && (src.includes('.mp4') || mf.getAttribute('type') === 'video/mp4')) {
-          adMediaUrl = src;
-          break;
-        }
-      }
-      if (!adMediaUrl && mediaFiles.length > 0) {
-        adMediaUrl = (mediaFiles[0].textContent || '').trim();
-      }
-
-      if (!adMediaUrl) continue;
-
-      trackingEvents.impressions = [];
-      trackingEvents.tracking = [];
-
-      xml.querySelectorAll("Impression").forEach(el => trackingEvents.impressions.push(el.textContent.trim()));
-      xml.querySelectorAll("Tracking").forEach(el => {
-        trackingEvents.tracking.push({ event: el.getAttribute("event"), url: el.textContent.trim() });
-      });
-
-      const clickThrough = xml.querySelector("ClickThrough");
-      trackingEvents.clickThrough = clickThrough ? clickThrough.textContent.trim() : null;
-
-      return adMediaUrl;
-    } catch (e) {
-      console.error("VAST Fetch Error:", e);
-    }
-  }
-  return null;
-}
-
-function playCustomVastPreRoll(video, onAdFinished) {
-  if (adHasPlayed) {
-    onAdFinished();
-    return;
-  }
-
-  const adLayer = document.getElementById('adLayer');
-  const adVideo = document.getElementById('adVideo');
-  const skipBtn = document.getElementById('skipBtn');
-
-  loadVastAd().then(adMediaUrl => {
-    if (!adMediaUrl) {
-      adHasPlayed = true;
-      if (adLayer) adLayer.style.display = "none";
-      onAdFinished();
-      return;
-    }
-
-    if (adLayer && adVideo && skipBtn) {
-      adLayer.style.display = "block";
-      skipBtn.style.display = "block";
-      adVideo.src = adMediaUrl;
-
-      if (trackingEvents.clickThrough) {
-        adVideo.style.cursor = 'pointer';
-        adVideo.onclick = () => {
-          window.open(trackingEvents.clickThrough, '_blank');
-        };
-      }
-
-      adVideo.play().then(() => {
-        if (playerLoader) playerLoader.classList.add('hidden');
-      }).catch(err => {
-        console.warn('Ad autoplay restricted, attempting muted play:', err);
-        adVideo.muted = true;
-        adVideo.play().catch(() => {
-          endAdPlayback(onAdFinished);
-        });
-      });
-
-      // Fire Initial Impression Beacons
-      trackingEvents.impressions.forEach(firePixel);
-
-      // Skip Timer Logic
-      let timeLeft = SKIP_COUNTDOWN;
-      skipBtn.innerText = `Skip in ${timeLeft}s`;
-      skipBtn.classList.remove('active');
-
-      if (skipTimer) clearInterval(skipTimer);
-      skipTimer = setInterval(() => {
-        timeLeft--;
-        if (timeLeft > 0) {
-          skipBtn.innerText = `Skip in ${timeLeft}s`;
-        } else {
-          clearInterval(skipTimer);
-          skipBtn.innerText = "Skip Ad";
-          skipBtn.classList.add('active');
-
-          const handleSkip = (e) => {
-            if (e) e.stopPropagation();
-            endAdPlayback(onAdFinished);
-          };
-          skipBtn.onclick = handleSkip;
-          skipBtn.ontouchstart = handleSkip;
-        }
-      }, 1000);
-
-      adVideo.onended = () => endAdPlayback(onAdFinished);
-    } else {
-      adHasPlayed = true;
-      onAdFinished();
-    }
-  });
-}
-
-function endAdPlayback(onAdFinished) {
-  if (skipTimer) clearInterval(skipTimer);
-  const adLayer = document.getElementById('adLayer');
-  const adVideo = document.getElementById('adVideo');
-
-  if (adVideo) {
-    adVideo.pause();
-    adVideo.onended = null;
-  }
-  if (adLayer) adLayer.style.display = "none";
-  adHasPlayed = true;
-
-  // Fire skip/close tracking pixels
-  trackingEvents.tracking
-    .filter(t => t.event === "skip" || t.event === "close")
-    .forEach(t => firePixel(t.url));
-
-  if (typeof onAdFinished === 'function') {
-    onAdFinished();
-  } else if (hlsVideoPlayer) {
-    hlsVideoPlayer.play();
-  }
-}
-
-// Video Pause Ad Integration
 if (hlsVideoPlayer) {
   hlsVideoPlayer.addEventListener('pause', () => {
-    if (!hlsVideoPlayer.ended && adHasPlayed && hlsVideoPlayer.currentTime > 1) {
+    if (!hlsVideoPlayer.ended && hlsVideoPlayer.currentTime > 1) {
       showPauseAd();
     }
   });
@@ -679,9 +514,9 @@ function closePauseAd() {
   if (pauseBannerLayer) pauseBannerLayer.style.display = "none";
 }
 
-// Expose functions globally for inline HTML event handlers
 window.showPauseAd = showPauseAd;
 window.closePauseAd = closePauseAd;
+
 
 
 
