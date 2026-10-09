@@ -52,8 +52,6 @@
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
   <!-- HLS.js Library -->
   <script src="https://cdn.jsdelivr.net/npm/hls.js@latest"></script>
-  <!-- Google IMA SDK for ExoClick VAST In-Video Ads -->
-  <script src="https://imasdk.googleapis.com/js/sdk/v3/ima3.js"></script>
   <!-- Stylesheet -->
   <link rel="stylesheet" href="style.css">
 </head>
@@ -103,8 +101,25 @@
     <div class="watch-player-card">
       <div class="watch-player-wrapper" style="position: relative;">
         <video id="hlsVideoPlayer" controls playsinline preload="auto" poster=""></video>
-        <!-- VAST In-Video Ad Container Overlay -->
-        <div id="adContainer" style="position: absolute; top: 0; left: 0; width: 100%; height: 100%; pointer-events: none; z-index: 10;"></div>
+        
+        <!-- Custom ExoClick VAST Pre-Roll Ad Overlay -->
+        <div id="vastAdOverlay" class="hidden" style="position: absolute; inset: 0; z-index: 20; background: #000; display: flex; flex-direction: column; justify-content: space-between; padding: 12px; box-sizing: border-box; pointer-events: auto;">
+          <div style="display: flex; justify-content: space-between; align-items: center; width: 100%;">
+            <span style="background: rgba(255, 0, 127, 0.9); color: #fff; font-size: 0.75rem; font-weight: 800; padding: 4px 10px; border-radius: 4px; letter-spacing: 0.5px;">
+              <i class="fa-solid fa-rectangle-ad"></i> SPONSORED AD
+            </span>
+            <a id="vastSponsorLink" href="#" target="_blank" rel="noopener noreferrer" style="background: rgba(0, 0, 0, 0.7); color: #fff; text-decoration: none; font-size: 0.75rem; font-weight: 600; padding: 6px 12px; border-radius: 20px; border: 1px solid rgba(255,255,255,0.3); backdrop-filter: blur(4px);">
+              Visit Sponsor <i class="fa-solid fa-arrow-up-right-from-square"></i>
+            </a>
+          </div>
+
+          <div style="display: flex; justify-content: flex-end; align-items: center; width: 100%;">
+            <button id="vastSkipBtn" style="background: rgba(0, 0, 0, 0.85); color: #fff; border: 1px solid var(--accent-primary); padding: 8px 16px; border-radius: 20px; font-weight: 700; font-size: 0.85rem; cursor: pointer; transition: all 0.2s ease;">
+              Skip Ad in <span id="vastTimer">5</span>s
+            </button>
+          </div>
+        </div>
+
         <div class="player-loader" id="playerLoader">
           <div class="spinner"></div>
           <span>Loading ExoticHub Stream...</span>
