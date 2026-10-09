@@ -1058,31 +1058,31 @@ body {
     max-width: 180px;
   }
   .hero-banner {
-    height: 300px;
+    height: 280px;
   }
   .hero-title {
-    font-size: 1.4rem;
+    font-size: 1.3rem;
   }
   .hero-content {
-    padding: 20px;
+    padding: 16px;
   }
   .video-grid {
-    grid-template-columns: repeat(auto-fill, minmax(240px, 1fr));
-    gap: 16px;
+    grid-template-columns: repeat(2, 1fr); /* 2 video thumbnails per row on Tablet/Mobile */
+    gap: 12px;
   }
   .watch-video-title {
-    font-size: 1.25rem;
+    font-size: 1.2rem;
   }
   .watch-video-info {
-    padding: 20px;
+    padding: 16px;
   }
   .pagination-wrapper {
-    margin-top: 24px;
-    gap: 8px;
+    margin-top: 20px;
+    gap: 6px;
   }
   .page-btn {
-    padding: 8px 14px;
-    font-size: 0.85rem;
+    padding: 6px 12px;
+    font-size: 0.8rem;
   }
 }
 
@@ -1091,14 +1091,29 @@ body {
     display: none;
   }
   .hero-banner {
-    height: 260px;
+    height: 240px;
   }
   .btn-play-hero {
-    padding: 10px 20px;
-    font-size: 0.9rem;
+    padding: 8px 16px;
+    font-size: 0.85rem;
   }
   .video-grid {
-    grid-template-columns: 1fr;
+    grid-template-columns: repeat(2, 1fr); /* 2 video thumbnails per row on Mobile */
+    gap: 10px;
+  }
+  .video-card .card-title {
+    font-size: 0.8rem;
+    line-height: 1.25;
+  }
+  .video-card .card-content {
+    padding: 8px;
+  }
+  .exoclick-mobile-banner-container {
+    margin: 8px 0 !important;
+    padding: 4px 6px !important;
+    min-height: 44px !important;
+    border-radius: var(--radius-sm) !important;
+    width: 100% !important;
   }
 }
 
@@ -1263,7 +1278,7 @@ body {
    ExoClick Ad Device Targeting Utilities
    ========================================================================== */
 
-/* Mobile View: hide desktop/tablet ads, show mobile ads */
+/* Mobile View: hide desktop/tablet ads, show mobile ads, enforce 2-column video grid */
 @media (max-width: 767px) {
   .desktop-only-ad,
   .tablet-desktop-ad {
@@ -1271,6 +1286,35 @@ body {
   }
   .mobile-only-ad {
     display: block !important;
+  }
+  .video-grid {
+    display: grid !important;
+    grid-template-columns: repeat(2, 1fr) !important;
+    gap: 10px !important;
+  }
+  .video-card .card-title {
+    font-size: 0.8rem !important;
+    line-height: 1.25 !important;
+    display: -webkit-box !important;
+    -webkit-line-clamp: 2 !important;
+    -webkit-box-orient: vertical !important;
+    overflow: hidden !important;
+  }
+  .video-card .card-content {
+    padding: 8px !important;
+  }
+  .badge-duration {
+    font-size: 0.72rem !important;
+    padding: 2px 6px !important;
+    bottom: 4px !important;
+    right: 4px !important;
+  }
+}
+
+/* Desktop Only IM Chat Box Ad (Hide on tablet & mobile) */
+@media (max-width: 991px) {
+  .desktop-only-ad {
+    display: none !important;
   }
 }
 
@@ -1282,9 +1326,43 @@ body {
   .tablet-desktop-ad {
     display: block !important;
   }
+}
+
+@media (min-width: 992px) {
   .desktop-only-ad {
     display: block !important;
   }
 }
+
+/* Thin Horizontal Mobile Banner Strip (ExoClick Zone 6051442) */
+.exoclick-mobile-banner-container {
+  margin: 10px 0 !important;
+  padding: 4px 6px !important;
+  min-height: 44px !important;
+  background: rgba(18, 18, 26, 0.95) !important;
+  border: 1px solid rgba(255, 30, 75, 0.25) !important;
+  border-radius: var(--radius-sm) !important;
+  width: 100% !important;
+  box-sizing: border-box !important;
+  overflow: hidden !important;
+  display: flex !important;
+  flex-direction: column !important;
+  align-items: center !important;
+  justify-content: center !important;
+  text-align: center !important;
+}
+
+.exoclick-mobile-banner-container .ad-label {
+  font-size: 0.62rem;
+  font-weight: 700;
+  color: var(--text-dim);
+  text-transform: uppercase;
+  letter-spacing: 0.8px;
+  margin-bottom: 2px;
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}
+
 
 

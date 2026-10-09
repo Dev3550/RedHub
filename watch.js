@@ -458,10 +458,56 @@ function formatViews(num) {
   return num.toString();
 }
 
+// Global Pre-Roll State Flag
+let isPreRollActive = false;
+
 function escapeHtml(str) {
   if (!str) return '';
   return str.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;");
 }
+
+// Setup Pause Ad Overlay Listeners
+document.addEventListener('DOMContentLoaded', () => {
+  if (hlsVideoPlayer) {
+    hlsVideoPlayer.addEventListener('pause', () => {
+      if (!isPreRollActive && !hlsVideoPlayer.ended && hlsVideoPlayer.currentTime > 1) {
+        const pauseAdOverlay = document.getElementById('pauseAdOverlay');
+        if (pauseAdOverlay) pauseAdOverlay.classList.remove('hidden');
+      }
+    });
+
+    hlsVideoPlayer.addEventListener('play', () => {
+      const pauseAdOverlay = document.getElementById('pauseAdOverlay');
+      if (pauseAdOverlay) pauseAdOverlay.classList.add('hidden');
+    });
+  }
+
+  const closePauseAdBtn = document.getElementById('closePauseAdBtn');
+  const resumePlayBtn = document.getElementById('resumePlayBtn');
+
+  if (closePauseAdBtn) {
+    const handleClose = (e) => {
+      if (e) e.stopPropagation();
+      const pauseAdOverlay = document.getElementById('pauseAdOverlay');
+      if (pauseAdOverlay) pauseAdOverlay.classList.add('hidden');
+    };
+    closePauseAdBtn.onclick = handleClose;
+    closePauseAdBtn.ontouchstart = handleClose;
+  }
+
+  if (resumePlayBtn) {
+    const handleResume = (e) => {
+      if (e) e.stopPropagation();
+      const pauseAdOverlay = document.getElementById('pauseAdOverlay');
+      if (pauseAdOverlay) pauseAdOverlay.classList.add('hidden');
+      if (hlsVideoPlayer) hlsVideoPlayer.play();
+    };
+    resumePlayBtn.onclick = handleResume;
+    resumePlayBtn.ontouchstart = handleResume;
+  }
+
+  initWatchPage();
+});
 
 // ==========================================================================
 // Custom Lightweight Native ExoClick VAST 3.0 Pre-Roll Engine (No IMA SDK needed!)
@@ -475,11 +521,13 @@ async function playCustomVastPreRoll(video, onAdFinished) {
   const timerSpan = document.getElementById('vastTimer');
   const sponsorLink = document.getElementById('vastSponsorLink');
 
+  isPreRollActive = true;
   let adCompleted = false;
 
   const finishAd = () => {
     if (adCompleted) return;
     adCompleted = true;
+    isPreRollActive = false;
     if (overlay) overlay.classList.add('hidden');
     hlsVideoPlayer.onended = null;
     hlsVideoPlayer.onclick = null;
@@ -565,10 +613,17 @@ async function playCustomVastPreRoll(video, onAdFinished) {
           skipBtn.style.opacity = '1';
           skipBtn.style.cursor = 'pointer';
           skipBtn.innerHTML = `Skip Ad <i class="fa-solid fa-forward-step"></i>`;
-          skipBtn.onclick = (e) => {
-            e.stopPropagation();
+          
+          const handleSkip = (e) => {
+            if (e) {
+              e.preventDefault();
+              e.stopPropagation();
+            }
+            clearInterval(timerInterval);
             finishAd();
           };
+          skipBtn.onclick = handleSkip;
+          skipBtn.ontouchstart = handleSkip;
         }
       }
     }, 1000);
@@ -583,8 +638,17 @@ async function playCustomVastPreRoll(video, onAdFinished) {
     hlsVideoPlayer.play().then(() => {
       if (playerLoader) playerLoader.classList.add('hidden');
     }).catch(e => {
-      console.warn('Autoplay ad catch:', e);
+      console.warn('Autoplay pre-roll ad policy restriction on mobile:', e);
       if (playerLoader) playerLoader.classList.add('hidden');
+      const bigPlayBtn = document.getElementById('bigPlayBtn');
+      if (bigPlayBtn) {
+        bigPlayBtn.style.display = 'flex';
+        bigPlayBtn.onclick = (evt) => {
+          evt.stopPropagation();
+          bigPlayBtn.style.display = 'none';
+          hlsVideoPlayer.play().catch(() => finishAd());
+        };
+      }
     });
 
   } catch (err) {
@@ -593,6 +657,5 @@ async function playCustomVastPreRoll(video, onAdFinished) {
   }
 }
 
-document.addEventListener('DOMContentLoaded', initWatchPage);
 
 

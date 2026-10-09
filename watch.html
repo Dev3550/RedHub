@@ -3,6 +3,9 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
+  <meta http-equiv="Pragma" content="no-cache">
+  <meta http-equiv="Expires" content="0">
   <title>Watch Video - ExoticHub</title>
   <!-- SEO & Social Media Meta Tags -->
   <!-- Hreflang International Target Tags -->
@@ -53,7 +56,7 @@
   <!-- HLS.js Library -->
   <script src="https://cdn.jsdelivr.net/npm/hls.js@latest"></script>
   <!-- Stylesheet -->
-  <link rel="stylesheet" href="style.css">
+  <link rel="stylesheet" href="style.css?v=20261009_v10">
 </head>
 <body>
 
@@ -110,21 +113,39 @@
         </div>
 
         <!-- Custom ExoClick VAST Pre-Roll Ad Overlay -->
-        <div id="vastAdOverlay" class="hidden" style="position: absolute; inset: 0; z-index: 20; background: #000; display: flex; flex-direction: column; justify-content: space-between; padding: 12px; box-sizing: border-box; pointer-events: auto;">
+        <div id="vastAdOverlay" class="hidden" style="position: absolute; inset: 0; z-index: 20; background: transparent; display: flex; flex-direction: column; justify-content: space-between; padding: 12px; box-sizing: border-box; pointer-events: none;">
           <div style="display: flex; justify-content: space-between; align-items: center; width: 100%;">
-            <span style="background: rgba(255, 0, 127, 0.9); color: #fff; font-size: 0.75rem; font-weight: 800; padding: 4px 10px; border-radius: 4px; letter-spacing: 0.5px;">
+            <span style="background: rgba(255, 0, 127, 0.9); color: #fff; font-size: 0.75rem; font-weight: 800; padding: 4px 10px; border-radius: 4px; letter-spacing: 0.5px; pointer-events: auto;">
               <i class="fa-solid fa-rectangle-ad"></i> SPONSORED AD
             </span>
-            <a id="vastSponsorLink" href="#" target="_blank" rel="noopener noreferrer" style="background: rgba(0, 0, 0, 0.7); color: #fff; text-decoration: none; font-size: 0.75rem; font-weight: 600; padding: 6px 12px; border-radius: 20px; border: 1px solid rgba(255,255,255,0.3); backdrop-filter: blur(4px);">
+            <a id="vastSponsorLink" href="#" target="_blank" rel="noopener noreferrer" style="background: rgba(0, 0, 0, 0.75); color: #fff; text-decoration: none; font-size: 0.75rem; font-weight: 600; padding: 6px 12px; border-radius: 20px; border: 1px solid rgba(255,255,255,0.3); backdrop-filter: blur(4px); pointer-events: auto;">
               Visit Sponsor <i class="fa-solid fa-arrow-up-right-from-square"></i>
             </a>
           </div>
 
           <div style="display: flex; justify-content: flex-end; align-items: center; width: 100%;">
-            <button id="vastSkipBtn" style="background: rgba(0, 0, 0, 0.85); color: #fff; border: 1px solid var(--accent-primary); padding: 8px 16px; border-radius: 20px; font-weight: 700; font-size: 0.85rem; cursor: pointer; transition: all 0.2s ease;">
+            <button id="vastSkipBtn" style="background: rgba(0, 0, 0, 0.85); color: #fff; border: 1px solid var(--accent-primary); padding: 8px 16px; border-radius: 20px; font-weight: 700; font-size: 0.85rem; cursor: pointer; transition: all 0.2s ease; pointer-events: auto;">
               Skip Ad in <span id="vastTimer">5</span>s
             </button>
           </div>
+        </div>
+
+        <!-- Custom ExoClick Pause Ad Banner Overlay -->
+        <div id="pauseAdOverlay" class="hidden" style="position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); z-index: 25; background: rgba(15, 15, 22, 0.95); border: 1px solid var(--accent-primary); border-radius: var(--radius-md); padding: 12px; width: 90%; max-width: 320px; box-sizing: border-box; text-align: center; box-shadow: 0 8px 30px rgba(0,0,0,0.9); backdrop-filter: blur(6px);">
+          <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px; border-bottom: 1px solid rgba(255,255,255,0.15); padding-bottom: 6px;">
+            <span style="font-size: 0.72rem; font-weight: 700; color: var(--accent-primary); text-transform: uppercase; letter-spacing: 0.5px;">
+              <i class="fa-solid fa-pause"></i> Video Paused - Sponsored Ad
+            </span>
+            <button id="closePauseAdBtn" style="background: rgba(255,255,255,0.1); border: none; color: #fff; width: 24px; height: 24px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 0.9rem; cursor: pointer;">&times;</button>
+          </div>
+          <div style="min-height: 100px; display: flex; align-items: center; justify-content: center;">
+            <script async type="application/javascript" src="https://a.magsrv.com/ad-provider.js"></script> 
+            <ins class="eas6a97888e10" data-zoneid="6051442" data-keywords="keywords"></ins> 
+            <script>(AdProvider = window.AdProvider || []).push({"serve": {}});</script>
+          </div>
+          <button id="resumePlayBtn" style="margin-top: 8px; width: 100%; background: var(--accent-gradient); color: #fff; border: none; padding: 6px 12px; border-radius: var(--radius-sm); font-size: 0.8rem; font-weight: 700; cursor: pointer;">
+            Resume Video <i class="fa-solid fa-play"></i>
+          </button>
         </div>
 
         <div class="player-loader" id="playerLoader">
@@ -163,9 +184,9 @@
           <button class="watch-act-btn"><i class="fa-regular fa-bookmark"></i> Save</button>
         </div>
 
-        <!-- ExoticHub ExoClick Mobile Banner Ad (Zone ID: 6051442) [Mobile Only] -->
-        <div class="mobile-only-ad exoclick-mobile-banner-container" style="margin: 16px 0 0 0; display: flex; flex-direction: column; align-items: center; justify-content: center; background: rgba(255,255,255,0.03); border: 1px solid var(--border-color); border-radius: var(--radius-sm); padding: 10px; min-height: 50px; width: 100%; box-sizing: border-box; overflow: hidden; text-align: center;">
-          <div style="font-size: 0.7rem; font-weight: 700; color: var(--text-dim); text-transform: uppercase; letter-spacing: 1px; margin-bottom: 6px;">
+        <!-- ExoticHub ExoClick Mobile Banner Ad (Zone ID: 6051442) [Mobile Only Thin Strip] -->
+        <div class="mobile-only-ad exoclick-mobile-banner-container">
+          <div class="ad-label">
             <i class="fa-solid fa-mobile-screen-button" style="color: var(--accent-primary);"></i> Mobile Sponsored Ad
           </div>
           <script async type="application/javascript" src="https://a.magsrv.com/ad-provider.js"></script> 
@@ -254,6 +275,6 @@
     <script>(AdProvider = window.AdProvider || []).push({"serve": {}});</script>
   </div>
 
-  <script src="watch.js?v=20261009_1"></script>
+  <script src="watch.js?v=20261009_v10"></script>
 </body>
 </html>
