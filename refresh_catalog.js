@@ -45,7 +45,7 @@ async function refreshAllExpiredTokens() {
           const checkRes = await fetch(streamUrl, { method: 'HEAD', signal: controller.signal });
           clearTimeout(timeoutId);
 
-          if (checkRes.status === 410 || checkRes.status === 404 || checkRes.status === 403) {
+          if (checkRes.status === 410 || checkRes.status === 404 || checkRes.status === 403 || checkRes.status === 423) {
             isExpired = true;
           } else {
             validCount++;
@@ -90,12 +90,13 @@ async function refreshAllExpiredTokens() {
   const validItems = [];
 
   for (const v of catalog) {
-    if ((v.page_url || '').includes('xhaccess.com') && v.video_stream_url && v.video_stream_url.includes('.m3u8')) {
+    const pageUrl = v.page_url || '';
+    if ((pageUrl.includes('xhaccess.com') || pageUrl.includes('inxxx.com')) && v.video_stream_url) {
       if (v.channel === 'HotTube Creator' || v.channel === 'HotTube Original') {
-        v.channel = 'ExoticHub Creator';
+        v.channel = 'ExoticHub Original';
       }
       if (v.title) {
-        v.title = v.title.replace(/HotTube/gi, 'ExoticHub');
+        v.title = v.title.replace(/(HotTube|inxxx|xxx|video)/gi, 'ExoticHub');
       }
 
       if (v._wasRefreshed) {

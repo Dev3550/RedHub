@@ -5,7 +5,7 @@ const DEFAULT_HEADERS = {
   'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0.0.0 Safari/537.36',
   'Accept': 'text/html,application/xhtml+xml,application/xml;q=0.9,image/avif,image/webp,*/*;q=0.8',
   'Accept-Language': 'en-US,en;q=0.9',
-  'Referer': 'https://xhaccess.com/'
+  'Cookie': '_sv=1'
 };
 
 /**
@@ -13,10 +13,12 @@ const DEFAULT_HEADERS = {
  */
 async function fetchHtml(url) {
   const maxRetries = 3;
+  const referer = url.includes('inxxx.com') ? 'https://www.inxxx.com/' : 'https://xhaccess.com/';
+  
   for (let attempt = 1; attempt <= maxRetries; attempt++) {
     try {
       const response = await axios.get(url, {
-        headers: DEFAULT_HEADERS,
+        headers: { ...DEFAULT_HEADERS, Referer: referer },
         timeout: 15000,
       });
       if (response.status === 200) {
@@ -49,14 +51,14 @@ function isAdOrTracker(url) {
     'popunder',
     'adblocked',
     'doubleclick',
-    'google-analytics'
+    'google-analytics',
+    'whitetrafsa.com'
   ];
   return adDomains.some(domain => url.toLowerCase().includes(domain));
 }
 
 /**
- * Parse search or category result page HTML.
- * Extracts video items (title, duration, thumbnail, detail link, stream/trailer link).
+ * Parse search or category result page HTML for xhaccess.com
  */
 function parseCatalogPage(html) {
   if (!html) return [];
@@ -75,16 +77,16 @@ function parseCatalogPage(html) {
 
         items.push({
           id: String(v.id || ''),
-          title: (v.title || '').trim(),
+          title: (v.title || '').replace(/(xHamster|xHamsters|xNXX|Pornhub|XVideos|FreePornVideo|HotTube|inxxx)/gi, 'ExoticHub').trim(),
           duration_seconds: v.duration || 0,
           duration_formatted: formatDuration(v.duration || 0),
           thumbnail_url: v.thumbURL || v.imageURL || '',
           poster_url: v.imageURL || v.thumbURL || '',
           page_url: pageURL,
           trailer_url: v.trailerURL || '',
-          stream_url: v.trailerURL || v.imageURL || '', // Fallback video stream link
+          stream_url: v.trailerURL || v.imageURL || '',
           views: v.views || 0,
-          channel: v.landing?.name || 'Unknown'
+          channel: v.landing?.name || 'ExoticHub Original'
         });
       }
     }
@@ -92,7 +94,7 @@ function parseCatalogPage(html) {
     console.warn(`[Warning] JSON initials parsing fallback: ${err.message}`);
   }
 
-  // 2. Fallback DOM Parsing via Cheerio if initials array was empty
+  // 2. Fallback DOM Parsing via Cheerio
   if (items.length === 0) {
     const $ = cheerio.load(html);
 
@@ -111,16 +113,16 @@ function parseCatalogPage(html) {
       if (title && pageURL) {
         items.push({
           id: pageURL.split('/').pop() || `id-${Date.now()}`,
-          title,
+          title: title.replace(/(xHamster|xHamsters|xNXX|Pornhub|XVideos|FreePornVideo|HotTube|inxxx)/gi, 'ExoticHub').trim(),
           duration_seconds: 0,
-          duration_formatted: duration || 'N/A',
+          duration_formatted: duration || '10:00',
           thumbnail_url: thumbnail,
           poster_url: thumbnail,
           page_url: pageURL.startsWith('http') ? pageURL : `https://xhaccess.com${pageURL}`,
           trailer_url: '',
           stream_url: '',
           views: 0,
-          channel: 'Unknown'
+          channel: 'ExoticHub Original'
         });
       }
     });
@@ -130,7 +132,48 @@ function parseCatalogPage(html) {
 }
 
 /**
- * Extract direct video stream link (HLS / MP4 / Embed) from video detail page.
+ * Parse category search result page HTML for inxxx.com
+ */
+function parseInxxxCatalogPage(html) {
+  if (!html) return [];
+  const items = [];
+  const $ = cheerio.load(html);
+
+  $('a[href*="/v/"]').each((_, el) => {
+    const $el = $(el);
+    const href = $el.attr('href') || '';
+    if (!href || isAdOrTracker(href)) return;
+
+    const title = $el.attr('title') || $el.text().trim();
+    const img = $el.find('img').first();
+    const thumbnail = img.attr('data-src') || img.attr('src') || '';
+    const duration = $el.find('.duration, .time, .duration-badge').text().trim() || '10:00';
+
+    const pageUrl = href.startsWith('http') ? href : `https://www.inxxx.com${href}`;
+    const cleanId = pageUrl.split('/').pop().replace('.xxx-video', '') || `inxxx_${Date.now()}_${Math.random().toString(36).substring(2, 6)}`;
+    const cleanTitle = title.replace(/(xHamster|xHamsters|xNXX|Pornhub|XVideos|FreePornVideo|HotTube|inxxx|xxx|video)/gi, 'ExoticHub').trim() || 'ExoticHub Video';
+
+    if (!items.some(i => i.page_url === pageUrl)) {
+      items.push({
+        id: cleanId,
+        title: cleanTitle,
+        duration_seconds: 600,
+        duration_formatted: duration,
+        thumbnail_url: thumbnail,
+        poster_url: thumbnail,
+        page_url: pageUrl,
+        stream_url: '',
+        views: Math.floor(Math.random() * 400000) + 20000,
+        channel: 'ExoticHub Original'
+      });
+    }
+  });
+
+  return items;
+}
+
+/**
+ * Extract direct video stream link (HLS / MP4) from xhaccess.com or inxxx.com detail page.
  */
 async function extractStreamDetails(pageUrl) {
   const html = await fetchHtml(pageUrl);
@@ -140,36 +183,43 @@ async function extractStreamDetails(pageUrl) {
   let hlsUrl = '';
   let mp4Url = '';
 
-  // Parse window.initials for videoModel
-  try {
-    const initialsMatch = html.match(/window\.initials\s*=\s*(\{.*?\});\s*<\/script>/s);
-    if (initialsMatch && initialsMatch[1]) {
-      const parsed = JSON.parse(initialsMatch[1]);
-      const videoModel = parsed?.videoModel || parsed?.video || {};
-      
-      // Look for HLS / MP4 sources inside videoModel or playerConfig
-      if (videoModel.sources) {
-        if (videoModel.sources.hls) hlsUrl = videoModel.sources.hls;
-        if (videoModel.sources.mp4) {
-          const qualities = Object.keys(videoModel.sources.mp4);
-          if (qualities.length > 0) {
-            mp4Url = videoModel.sources.mp4[qualities[qualities.length - 1]];
+  if (pageUrl.includes('inxxx.com')) {
+    // Extract stream MP4 URL from inxxx.com page (get_file/.../?v-acctoken=...)
+    const getFileMatch = html.match(/(https?:\/\/[^"'\s]+\/get_file\/[^\s"']+)/i);
+    if (getFileMatch) {
+      mp4Url = getFileMatch[1].replace(/&amp;/g, '&');
+    }
+  } else {
+    // Parse xhaccess.com initials script
+    try {
+      const initialsMatch = html.match(/window\.initials\s*=\s*(\{.*?\});\s*<\/script>/s);
+      if (initialsMatch && initialsMatch[1]) {
+        const parsed = JSON.parse(initialsMatch[1]);
+        const videoModel = parsed?.videoModel || parsed?.video || {};
+        
+        if (videoModel.sources) {
+          if (videoModel.sources.hls) hlsUrl = videoModel.sources.hls;
+          if (videoModel.sources.mp4) {
+            const qualities = Object.keys(videoModel.sources.mp4);
+            if (qualities.length > 0) {
+              mp4Url = videoModel.sources.mp4[qualities[qualities.length - 1]];
+            }
           }
         }
       }
-    }
-  } catch (_) {}
+    } catch (_) {}
 
-  // Fallback regex matching for .m3u8 or video source tags in HTML
-  if (!hlsUrl && !mp4Url) {
-    const m3u8Match = html.match(/(https?:\\?\/\\?\/[^"' ]+\.m3u8[^"' ]*)/i);
-    if (m3u8Match) {
-      hlsUrl = m3u8Match[1].replace(/\\/g, '');
-    }
+    // Fallback regex matching for .m3u8 or video source tags in HTML
+    if (!hlsUrl && !mp4Url) {
+      const m3u8Match = html.match(/(https?:\\?\/\\?\/[^"' ]+\.m3u8[^"' ]*)/i);
+      if (m3u8Match) {
+        hlsUrl = m3u8Match[1].replace(/\\/g, '');
+      }
 
-    const mp4Match = html.match(/(https?:\\?\/\\?\/[^"' ]+\.mp4[^"' ]*)/i);
-    if (mp4Match && !isAdOrTracker(mp4Match[1])) {
-      mp4Url = mp4Match[1].replace(/\\/g, '');
+      const mp4Match = html.match(/(https?:\\?\/\\?\/[^"' ]+\.mp4[^"' ]*)/i);
+      if (mp4Match && !isAdOrTracker(mp4Match[1])) {
+        mp4Url = mp4Match[1].replace(/\\/g, '');
+      }
     }
   }
 
@@ -192,6 +242,7 @@ function formatDuration(seconds) {
 module.exports = {
   fetchHtml,
   parseCatalogPage,
+  parseInxxxCatalogPage,
   extractStreamDetails,
   isAdOrTracker
 };

@@ -1,43 +1,71 @@
 // scraper_cluster.js – Multi-Worker Parallel Cluster Scraper for ExoticHub (d:\redhub)
-// Dedicated 100% to clean High-Quality xhaccess HLS streams
+// Dedicated to clean High-Quality HLS & MP4 streams from xhaccess.com & inxxx.com
 
 const fs = require('fs');
 const path = require('path');
-const { fetchHtml, parseCatalogPage, extractStreamDetails, isAdOrTracker } = require('./utils');
+const { fetchHtml, parseCatalogPage, parseInxxxCatalogPage, extractStreamDetails, isAdOrTracker } = require('./utils');
 
-const WORKER_COUNT = 10;
+const WORKER_COUNT = 15;
 const OUTPUT_FILE = path.resolve(__dirname, 'sample_videos.json');
 const CHECKPOINT_FILE = path.resolve(__dirname, 'checkpoint_urls.json');
 
-// Target Categories across xhaccess
-const XH_CATEGORIES = [
-  { name: 'All', url: 'https://xhaccess.com/search/xhamsters' },
-  { name: 'Indian', url: 'https://xhaccess.com/search/indian' },
-  { name: 'Desi', url: 'https://xhaccess.com/search/desi' },
-  { name: 'Mom', url: 'https://xhaccess.com/search/mom' },
-  { name: 'Japanese', url: 'https://xhaccess.com/search/japanese' },
-  { name: 'Pakistani', url: 'https://xhaccess.com/search/pakistani' },
-  { name: 'Russian', url: 'https://xhaccess.com/search/russian' },
-  { name: 'American', url: 'https://xhaccess.com/search/american' },
-  { name: 'Anal', url: 'https://xhaccess.com/search/anal' },
-  { name: 'Latina', url: 'https://xhaccess.com/search/latina' },
-  { name: 'Interracial', url: 'https://xhaccess.com/search/interracial' },
-  { name: 'Amateur', url: 'https://xhaccess.com/search/amateur' },
-  { name: 'Blowjob', url: 'https://xhaccess.com/search/blowjob' },
-  { name: 'Big Tits', url: 'https://xhaccess.com/search/big-tits' },
-  { name: 'Asian', url: 'https://xhaccess.com/search/asian' },
-  { name: 'Mature', url: 'https://xhaccess.com/search/mature' },
-  { name: 'Creampie', url: 'https://xhaccess.com/search/creampie' },
-  { name: 'POV', url: 'https://xhaccess.com/search/pov' },
-  { name: 'Group', url: 'https://xhaccess.com/search/group' },
-  { name: 'Hardcore', url: 'https://xhaccess.com/search/hardcore' },
-  { name: 'Teen', url: 'https://xhaccess.com/search/teen' },
-  { name: 'MILF', url: 'https://xhaccess.com/search/milf' },
-  { name: 'Threesome', url: 'https://xhaccess.com/search/threesome' },
-  { name: 'Solo', url: 'https://xhaccess.com/search/solo' },
-  { name: 'Lesbian', url: 'https://xhaccess.com/search/lesbian' },
-  { name: 'Blonde', url: 'https://xhaccess.com/search/blonde' },
-  { name: 'Brunette', url: 'https://xhaccess.com/search/brunette' }
+// Target Categories across xhaccess & inxxx
+const TARGET_CATEGORIES = [
+  // xhaccess categories
+  { name: 'Indian', source: 'xh', url: 'https://xhaccess.com/search/indian' },
+  { name: 'Desi', source: 'xh', url: 'https://xhaccess.com/search/desi' },
+  { name: 'Mom', source: 'xh', url: 'https://xhaccess.com/search/mom' },
+  { name: 'Anal', source: 'xh', url: 'https://xhaccess.com/search/anal' },
+  { name: 'Latina', source: 'xh', url: 'https://xhaccess.com/search/latina' },
+  { name: 'Interracial', source: 'xh', url: 'https://xhaccess.com/search/interracial' },
+  { name: 'Amateur', source: 'xh', url: 'https://xhaccess.com/search/amateur' },
+  { name: 'Blowjob', source: 'xh', url: 'https://xhaccess.com/search/blowjob' },
+  { name: 'Big Tits', source: 'xh', url: 'https://xhaccess.com/search/big-tits' },
+  { name: 'Asian', source: 'xh', url: 'https://xhaccess.com/search/asian' },
+  { name: 'Mature', source: 'xh', url: 'https://xhaccess.com/search/mature' },
+  { name: 'Creampie', source: 'xh', url: 'https://xhaccess.com/search/creampie' },
+  { name: 'POV', source: 'xh', url: 'https://xhaccess.com/search/pov' },
+  { name: 'Group', source: 'xh', url: 'https://xhaccess.com/search/group' },
+  { name: 'Hardcore', source: 'xh', url: 'https://xhaccess.com/search/hardcore' },
+  { name: 'Teen', source: 'xh', url: 'https://xhaccess.com/search/teen' },
+  { name: 'MILF', source: 'xh', url: 'https://xhaccess.com/search/milf' },
+  { name: 'Threesome', source: 'xh', url: 'https://xhaccess.com/search/threesome' },
+  { name: 'Solo', source: 'xh', url: 'https://xhaccess.com/search/solo' },
+  { name: 'Lesbian', source: 'xh', url: 'https://xhaccess.com/search/lesbian' },
+  { name: 'Blonde', source: 'xh', url: 'https://xhaccess.com/search/blonde' },
+  { name: 'Brunette', source: 'xh', url: 'https://xhaccess.com/search/brunette' },
+  { name: 'Japanese', source: 'xh', url: 'https://xhaccess.com/search/japanese' },
+  { name: 'Pakistani', source: 'xh', url: 'https://xhaccess.com/search/pakistani' },
+  { name: 'Russian', source: 'xh', url: 'https://xhaccess.com/search/russian' },
+  { name: 'American', source: 'xh', url: 'https://xhaccess.com/search/american' },
+
+  // inxxx categories
+  { name: 'Indian', source: 'inxxx', url: 'https://www.inxxx.com/search/indian/' },
+  { name: 'Desi', source: 'inxxx', url: 'https://www.inxxx.com/search/desi/' },
+  { name: 'Mom', source: 'inxxx', url: 'https://www.inxxx.com/search/mom/' },
+  { name: 'Anal', source: 'inxxx', url: 'https://www.inxxx.com/search/anal/' },
+  { name: 'Latina', source: 'inxxx', url: 'https://www.inxxx.com/search/latina/' },
+  { name: 'Interracial', source: 'inxxx', url: 'https://www.inxxx.com/search/interracial/' },
+  { name: 'Amateur', source: 'inxxx', url: 'https://www.inxxx.com/search/amateur/' },
+  { name: 'Blowjob', source: 'inxxx', url: 'https://www.inxxx.com/search/blowjob/' },
+  { name: 'Big Tits', source: 'inxxx', url: 'https://www.inxxx.com/search/big-tits/' },
+  { name: 'Asian', source: 'inxxx', url: 'https://www.inxxx.com/search/asian/' },
+  { name: 'MILF', source: 'inxxx', url: 'https://www.inxxx.com/search/milf/' },
+  { name: 'Mature', source: 'inxxx', url: 'https://www.inxxx.com/search/mature/' },
+  { name: 'Creampie', source: 'inxxx', url: 'https://www.inxxx.com/search/creampie/' },
+  { name: 'POV', source: 'inxxx', url: 'https://www.inxxx.com/search/pov/' },
+  { name: 'Group', source: 'inxxx', url: 'https://www.inxxx.com/search/group/' },
+  { name: 'Hardcore', source: 'inxxx', url: 'https://www.inxxx.com/search/hardcore/' },
+  { name: 'Teen', source: 'inxxx', url: 'https://www.inxxx.com/search/teen/' },
+  { name: 'Threesome', source: 'inxxx', url: 'https://www.inxxx.com/search/threesome/' },
+  { name: 'Solo', source: 'inxxx', url: 'https://www.inxxx.com/search/solo/' },
+  { name: 'Lesbian', source: 'inxxx', url: 'https://www.inxxx.com/search/lesbian/' },
+  { name: 'Blonde', source: 'inxxx', url: 'https://www.inxxx.com/search/blonde/' },
+  { name: 'Brunette', source: 'inxxx', url: 'https://www.inxxx.com/search/brunette/' },
+  { name: 'Japanese', source: 'inxxx', url: 'https://www.inxxx.com/search/japanese/' },
+  { name: 'Pakistani', source: 'inxxx', url: 'https://www.inxxx.com/search/pakistani/' },
+  { name: 'Russian', source: 'inxxx', url: 'https://www.inxxx.com/search/russian/' },
+  { name: 'American', source: 'inxxx', url: 'https://www.inxxx.com/search/american/' }
 ];
 
 let catalog = [];
@@ -51,10 +79,10 @@ if (fs.existsSync(CHECKPOINT_FILE)) {
 }
 
 function saveProgress() {
-  // Filter out any non-xhaccess entries & reindex
+  // Filter out any invalid non-stream or ad entries & reindex
   catalog = catalog.filter(v => {
     const pageUrl = v.page_url || '';
-    return pageUrl.includes('xhaccess.com');
+    return (pageUrl.includes('xhaccess.com') || pageUrl.includes('inxxx.com')) && v.video_stream_url;
   }).map((v, i) => ({ ...v, index: i + 1 }));
 
   fs.writeFileSync(OUTPUT_FILE, JSON.stringify(catalog, null, 2), 'utf-8');
@@ -62,27 +90,27 @@ function saveProgress() {
 }
 
 /**
- * Discover all raw video items across xhaccess categories
+ * Discover all raw video items across xhaccess & inxxx categories
  */
 async function discoverAllVideoItems() {
   const allItemsMap = new Map();
 
-  for (const catObj of XH_CATEGORIES) {
-    console.log(`\n🔎 [xhaccess] Scanning category [${catObj.name}]: ${catObj.url}`);
+  for (const catObj of TARGET_CATEGORIES) {
+    console.log(`\n🔎 [${catObj.source}] Scanning category [${catObj.name}]: ${catObj.url}`);
     const html = await fetchHtml(catObj.url);
     if (!html) continue;
 
-    const items = parseCatalogPage(html);
+    const items = catObj.source === 'inxxx' ? parseInxxxCatalogPage(html) : parseCatalogPage(html);
     console.log(`   ➜ Discovered ${items.length} raw video items`);
 
     for (const item of items) {
       if (item.page_url && !isAdOrTracker(item.page_url)) {
         if (!allItemsMap.has(item.page_url)) {
-          allItemsMap.set(item.page_url, { ...item, category: catObj.name, source: 'xh' });
+          allItemsMap.set(item.page_url, { ...item, category: catObj.name, source: catObj.source });
         }
       }
     }
-    await new Promise(r => setTimeout(r, 150));
+    await new Promise(r => setTimeout(r, 120));
   }
 
   console.log(`\n✅ Total unique video URLs collected for queue: ${allItemsMap.size}`);
@@ -98,7 +126,7 @@ async function worker(id, queue) {
     if (!item || !item.page_url || scrapedUrls.has(item.page_url)) continue;
 
     try {
-      console.log(`[Worker ${id}] 📥 Fetching HLS details for [${item.category}]: ${item.title.substring(0, 35)}...`);
+      console.log(`[Worker ${id}] 📥 Fetching Stream details for [${item.category}] (${item.source}): ${item.title.substring(0, 35)}...`);
 
       let mainStreamUrl = item.stream_url || '';
       let posterUrl = item.poster_url || item.thumbnail_url;
@@ -108,23 +136,29 @@ async function worker(id, queue) {
         mainStreamUrl = details.stream_url;
       }
 
+      if (!mainStreamUrl) {
+        console.log(`[Worker ${id}] ⚠️ No valid stream URL found for ${item.page_url}`);
+        scrapedUrls.add(item.page_url);
+        continue;
+      }
+
       // Format clean title without third-party branding
       const cleanTitle = item.title
-        .replace(/(xHamster|xHamsters|xNXX|Pornhub|XVideos|FreePornVideo|SexVid|SexVid\.xxx|HotTube)/gi, 'ExoticHub')
+        .replace(/(xHamster|xHamsters|xNXX|Pornhub|XVideos|FreePornVideo|SexVid|HotTube|inxxx|xxx|video)/gi, 'ExoticHub')
         .trim();
 
       const cleanItem = {
         index: 1,
         id: item.id || `vid_${Date.now()}_${Math.random().toString(36).substring(2, 6)}`,
-        title: cleanTitle,
-        category: item.category || 'All',
+        title: cleanTitle || 'ExoticHub Trending Video',
+        category: item.category || 'Trending',
         duration: item.duration || item.duration_formatted || '10:00',
         thumbnail_url: item.thumbnail_url || posterUrl,
         poster_url: posterUrl || item.thumbnail_url,
         page_url: item.page_url,
         video_stream_url: mainStreamUrl,
         views: item.views || Math.floor(Math.random() * 500000) + 50000,
-        channel: (item.channel && !item.channel.includes('HotTube')) ? item.channel : 'ExoticHub Original'
+        channel: 'ExoticHub Original'
       };
 
       // Deduplicate by ID & Page URL
@@ -149,7 +183,7 @@ async function worker(id, queue) {
  */
 async function runClusterScraper() {
   console.log('==================================================================');
-  console.log('  🚀 ExoticHub Dedicated HLS Cluster Scraper (10 Workers)');
+  console.log('  🚀 ExoticHub Multi-Source Cluster Scraper (15 Workers)');
   console.log('==================================================================');
 
   const allItems = await discoverAllVideoItems();
@@ -173,7 +207,7 @@ async function runClusterScraper() {
   saveProgress();
 
   console.log('\n==================================================================');
-  console.log(`✅ Cluster scraping completed - ${catalog.length} HLS items stored in ${OUTPUT_FILE}`);
+  console.log(`✅ Cluster scraping completed - ${catalog.length} Stream items stored in ${OUTPUT_FILE}`);
   console.log('==================================================================');
 }
 
