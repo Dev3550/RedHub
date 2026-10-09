@@ -1,5 +1,5 @@
 // ==========================================================================
-// HotTube Watch Page Logic & Fail-Safe Smart Native Player (watch.js)
+// ExoticHub Watch Page Logic & Fail-Safe Smart Native Player (watch.js)
 // ==========================================================================
 
 const FALLBACK_CATALOG = [
@@ -69,7 +69,7 @@ async function initWatchPage() {
 
   // Render Video Information
   watchTitle.textContent = currentVideo.title;
-  watchChannel.innerHTML = `<i class="fa-regular fa-circle-user"></i> ${currentVideo.channel || 'HotTube Creator'}`;
+  watchChannel.innerHTML = `<i class="fa-regular fa-circle-user"></i> ${currentVideo.channel || 'ExoticHub Creator'}`;
   watchViews.innerHTML = `<i class="fa-regular fa-eye"></i> ${formatViews(currentVideo.views)} views`;
   watchDuration.innerHTML = `<i class="fa-regular fa-clock"></i> ${currentVideo.duration}`;
   watchCategory.innerHTML = `<i class="fa-solid fa-layer-group"></i> Category: ${currentVideo.category || 'Trending'}`;
@@ -91,8 +91,8 @@ async function initWatchPage() {
 function applySeoMetadata(video) {
   if (!video) return;
 
-  const pageTitle = `${video.title} feat. ${video.channel || 'HotTube Creator'} – ${video.category || 'Trending'}, Desi, Indian, HD Video | HotTube`;
-  const pageDesc = `Watch ${video.title} video. Channel: ${video.channel || 'HotTube Creator'}. Category: ${video.category || 'Trending'}, HD Streaming. Enjoy full-length HD video on HotTube!`;
+  const pageTitle = `${video.title} feat. ${video.channel || 'ExoticHub Creator'} – ${video.category || 'Trending'}, Desi, Indian, HD Video | ExoticHub`;
+  const pageDesc = `Watch ${video.title} video. Channel: ${video.channel || 'ExoticHub Creator'}. Category: ${video.category || 'Trending'}, HD Streaming. Enjoy full-length HD video on ExoticHub!`;
   const pageUrl = `https://hottube.devendradubey61.workers.dev/watch.html?id=${encodeURIComponent(video.id)}`;
   const imageUrl = video.poster_url || video.thumbnail_url || 'https://hottube.devendradubey61.workers.dev/icon.png';
 
@@ -115,7 +115,7 @@ function applySeoMetadata(video) {
     let el = document.getElementById(id) || document.querySelector(`meta[property="${prop}"]`);
     if (el) el.setAttribute('content', content);
   };
-  setMetaProp('ogSiteName', 'og:site_name', 'HotTube');
+  setMetaProp('ogSiteName', 'og:site_name', 'ExoticHub');
   setMetaProp('ogType', 'og:type', 'video.other');
   setMetaProp('ogTitle', 'og:title', pageTitle);
   setMetaProp('ogDescription', 'og:description', pageDesc);
@@ -128,7 +128,7 @@ function applySeoMetadata(video) {
     if (el) el.setAttribute('content', content);
   };
   setMetaName('twitterCard', 'twitter:card', 'summary_large_image');
-  setMetaName('twitterSite', 'twitter:site', '@hottubemedia');
+  setMetaName('twitterSite', 'twitter:site', '@exotichubmedia');
   setMetaName('twitterTitle', 'twitter:title', pageTitle);
   setMetaName('twitterDescription', 'twitter:description', pageDesc);
   setMetaName('twitterImage', 'twitter:image', imageUrl);
@@ -156,10 +156,10 @@ function applySeoMetadata(video) {
       "embedUrl": pageUrl,
       "publisher": {
         "@type": "Organization",
-        "name": "HotTube",
+        "name": "ExoticHub",
         "logo": {
           "@type": "ImageObject",
-          "url": "https://ui-avatars.com/api/?name=HotTube&background=FF1E4B&color=fff"
+          "url": "https://ui-avatars.com/api/?name=ExoticHub&background=FF1E4B&color=fff"
         }
       }
     };
@@ -405,7 +405,7 @@ function renderRecommendations(video) {
       <div class="card-content">
         <h3 class="card-title">${escapeHtml(rec.title)}</h3>
         <div class="card-meta">
-          <span class="card-channel"><i class="fa-regular fa-circle-user"></i> ${escapeHtml(rec.channel || 'HotTube Creator')}</span>
+          <span class="card-channel"><i class="fa-regular fa-circle-user"></i> ${escapeHtml(rec.channel || 'ExoticHub Creator')}</span>
           <span class="card-views"><i class="fa-regular fa-eye"></i> ${formatViews(rec.views)}</span>
         </div>
       </div>

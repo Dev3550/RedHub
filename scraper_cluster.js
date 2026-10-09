@@ -1,4 +1,4 @@
-// scraper_cluster.js – Multi-Worker Parallel Cluster Scraper for HotTube (d:\redhub)
+// scraper_cluster.js – Multi-Worker Parallel Cluster Scraper for ExoticHub (d:\redhub)
 // Dedicated 100% to clean High-Quality xhaccess HLS streams
 
 const fs = require('fs');
@@ -51,7 +51,7 @@ if (fs.existsSync(CHECKPOINT_FILE)) {
 }
 
 function saveProgress() {
-  // Always filter out any non-xhaccess entries
+  // Filter out any non-xhaccess entries & reindex
   catalog = catalog.filter(v => {
     const pageUrl = v.page_url || '';
     return pageUrl.includes('xhaccess.com');
@@ -110,11 +110,11 @@ async function worker(id, queue) {
 
       // Format clean title without third-party branding
       const cleanTitle = item.title
-        .replace(/(xHamster|xHamsters|xNXX|Pornhub|XVideos|FreePornVideo|SexVid|SexVid\.xxx)/gi, 'HotTube')
+        .replace(/(xHamster|xHamsters|xNXX|Pornhub|XVideos|FreePornVideo|SexVid|SexVid\.xxx|HotTube)/gi, 'ExoticHub')
         .trim();
 
       const cleanItem = {
-        index: catalog.length + 1,
+        index: 1,
         id: item.id || `vid_${Date.now()}_${Math.random().toString(36).substring(2, 6)}`,
         title: cleanTitle,
         category: item.category || 'All',
@@ -124,12 +124,13 @@ async function worker(id, queue) {
         page_url: item.page_url,
         video_stream_url: mainStreamUrl,
         views: item.views || Math.floor(Math.random() * 500000) + 50000,
-        channel: item.channel || 'HotTube Original'
+        channel: (item.channel && !item.channel.includes('HotTube')) ? item.channel : 'ExoticHub Original'
       };
 
       // Deduplicate by ID & Page URL
       catalog = catalog.filter(i => String(i.id) !== String(cleanItem.id) && i.page_url !== cleanItem.page_url);
-      catalog.push(cleanItem);
+      // PREPEND newly scraped item to the FRONT of catalog for Homepage visibility!
+      catalog.unshift(cleanItem);
 
       scrapedUrls.add(item.page_url);
 
@@ -148,7 +149,7 @@ async function worker(id, queue) {
  */
 async function runClusterScraper() {
   console.log('==================================================================');
-  console.log('  🚀 HotTube Dedicated HLS Cluster Scraper (10 Workers)');
+  console.log('  🚀 ExoticHub Dedicated HLS Cluster Scraper (10 Workers)');
   console.log('==================================================================');
 
   const allItems = await discoverAllVideoItems();

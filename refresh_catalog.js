@@ -7,7 +7,7 @@ const CONCURRENCY = 15; // 15 Parallel Async Workers
 
 async function refreshAllExpiredTokens() {
   console.log('==================================================================');
-  console.log('  🚀 Fast Parallel Refreshing Catalog Stream Tokens');
+  console.log('  🚀 ExoticHub Fast Parallel Stream Token & Catalog Refresher');
   console.log('==================================================================');
 
   if (!fs.existsSync(CATALOG_FILE)) {
@@ -60,6 +60,7 @@ async function refreshAllExpiredTokens() {
           const freshDetails = await extractStreamDetails(item.page_url);
           if (freshDetails && freshDetails.stream_url) {
             item.video_stream_url = freshDetails.stream_url;
+            item._wasRefreshed = true;
             updatedCount++;
             console.log(`[Worker ${workerId}] ✅ Refreshed stream URL for ID ${item.id}`);
           } else {
@@ -84,8 +85,29 @@ async function refreshAllExpiredTokens() {
 
   await Promise.all(workers);
 
-  // Filter out non-xhaccess items or items that still have invalid/missing stream URLs
-  const cleanCatalog = catalog.filter(v => (v.page_url || '').includes('xhaccess.com') && v.video_stream_url && v.video_stream_url.includes('.m3u8')).map((v, idx) => ({
+  // Separate refreshed items and place them at the TOP (beginning) of the catalog for Homepage display
+  const refreshedItems = [];
+  const validItems = [];
+
+  for (const v of catalog) {
+    if ((v.page_url || '').includes('xhaccess.com') && v.video_stream_url && v.video_stream_url.includes('.m3u8')) {
+      if (v.channel === 'HotTube Creator' || v.channel === 'HotTube Original') {
+        v.channel = 'ExoticHub Creator';
+      }
+      if (v.title) {
+        v.title = v.title.replace(/HotTube/gi, 'ExoticHub');
+      }
+
+      if (v._wasRefreshed) {
+        delete v._wasRefreshed;
+        refreshedItems.push(v);
+      } else {
+        validItems.push(v);
+      }
+    }
+  }
+
+  const cleanCatalog = [...refreshedItems, ...validItems].map((v, idx) => ({
     ...v,
     index: idx + 1
   }));
@@ -95,7 +117,7 @@ async function refreshAllExpiredTokens() {
   console.log('\n==================================================================');
   console.log(`✅ Parallel Token Refresh Complete!`);
   console.log(`   Valid active streams: ${validCount}`);
-  console.log(`   Tokens refreshed: ${updatedCount}`);
+  console.log(`   Tokens refreshed & moved to Homepage Top: ${updatedCount}`);
   console.log(`   Failed/Removed: ${failedCount}`);
   console.log(`   Final active catalog size: ${cleanCatalog.length}`);
   console.log('==================================================================\n');

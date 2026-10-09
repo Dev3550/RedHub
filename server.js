@@ -43,5 +43,5 @@ const server = http.createServer((req, res) => {
 });
 
 server.listen(PORT, () => {
-  console.log(`🚀 HotTube local dev server running at http://localhost:${PORT}`);
+  console.log(`🚀 ExoticHub local dev server running at http://localhost:${PORT}`);
 });

@@ -1,5 +1,5 @@
 // ==========================================================================
-// HotTube Home Page Logic & Catalog Engine (app.js)
+// ExoticHub Home Page Logic & Catalog Engine (app.js)
 // ==========================================================================
 
 // Embedded Scraped Catalog Data Fallback (from d:\redhub\sample_videos.json)
@@ -118,10 +118,10 @@ async function initApp() {
     videosData = FALLBACK_CATALOG;
   }
 
-  // Clean third-party branding to 100% HotTube
+  // Clean third-party branding to 100% ExoticHub
   videosData = videosData.map(v => ({
     ...v,
-    title: cleanHotTubeBranding(v.title)
+    title: cleanExoticHubBranding(v.title)
   }));
 
   // Store active seeds
@@ -248,7 +248,7 @@ function renderCurrentPage() {
         <div class="card-content">
           <h3 class="card-title">${escapeHtml(video.title)}</h3>
           <div class="card-meta">
-            <span class="card-channel"><i class="fa-regular fa-circle-user"></i> ${escapeHtml(video.channel || 'HotTube Creator')}</span>
+            <span class="card-channel"><i class="fa-regular fa-circle-user"></i> ${escapeHtml(video.channel || 'ExoticHub Creator')}</span>
             <span class="card-views"><i class="fa-regular fa-eye"></i> ${formatViews(video.views)}</span>
           </div>
         </div>
@@ -333,7 +333,7 @@ function renderTrendingCarousel() {
       <div class="trending-card-info">
         <h3 class="trending-card-title">${escapeHtml(video.title)}</h3>
         <div class="trending-card-meta">
-          <span class="trending-card-channel"><i class="fa-regular fa-circle-user"></i> ${escapeHtml(video.channel || 'HotTube Original')}</span>
+          <span class="trending-card-channel"><i class="fa-regular fa-circle-user"></i> ${escapeHtml(video.channel || 'ExoticHub Original')}</span>
           <span class="trending-card-views"><i class="fa-regular fa-eye"></i> ${formatViews(video.views)}</span>
         </div>
       </div>
@@ -647,9 +647,9 @@ function formatViews(num) {
   return num.toString();
 }
 
-function cleanHotTubeBranding(str) {
-  if (!str) return 'HotTube Video';
-  return str.replace(/(xHamster|xHamsters|xNXX|Pornhub|XVideos|FreePornVideo)/gi, 'HotTube').trim();
+function cleanExoticHubBranding(str) {
+  if (!str) return 'ExoticHub Video';
+  return str.replace(/(xHamster|xHamsters|xNXX|Pornhub|XVideos|FreePornVideo|HotTube)/gi, 'ExoticHub').trim();
 }
 
 function escapeHtml(str) {

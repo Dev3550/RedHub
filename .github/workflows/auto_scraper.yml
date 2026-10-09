@@ -1,4 +1,4 @@
-name: HotTube Auto Scraper Cron
+name: ExoticHub Auto Scraper Cron
 
 on:
   schedule:

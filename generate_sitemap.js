@@ -28,7 +28,7 @@ function parseDurationSeconds(durStr) {
 
 function generateSitemap() {
   console.log('==================================================================');
-  console.log('  🚀 Generating Google Video Sitemap XML for HotTube');
+  console.log('  🚀 Generating Google Video Sitemap XML for ExoticHub');
   console.log('==================================================================');
 
   if (!fs.existsSync(CATALOG_FILE)) {
@@ -70,8 +70,8 @@ function generateSitemap() {
     const watchUrl = `${BASE_URL}/watch.html?id=${encodeURIComponent(item.id)}`;
     const title = escapeXml(item.title);
     const category = escapeXml(item.category || 'Trending');
-    const channel = escapeXml(item.channel || 'HotTube Creator');
-    const description = escapeXml(`Watch ${item.title} video. Channel: ${item.channel || 'HotTube Creator'}. Category: ${item.category || 'Trending'}. Stream HD videos online on HotTube.`);
+    const channel = escapeXml(item.channel || 'ExoticHub Creator');
+    const description = escapeXml(`Watch ${item.title} video. Channel: ${item.channel || 'ExoticHub Creator'}. Category: ${item.category || 'Trending'}. Stream HD videos online on ExoticHub.`);
     const thumbnailUrl = escapeXml(item.poster_url || item.thumbnail_url);
     const streamUrl = escapeXml(item.video_stream_url);
     const durationSec = parseDurationSeconds(item.duration);
