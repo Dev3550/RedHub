@@ -458,204 +458,217 @@ function formatViews(num) {
   return num.toString();
 }
 
-// Global Pre-Roll State Flag
-let isPreRollActive = false;
+// Setup Watch Page Event Initialization
+document.addEventListener('DOMContentLoaded', () => {
+  initWatchPage();
+});
 
 function escapeHtml(str) {
   if (!str) return '';
   return str.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;");
 }
 
-// Setup Pause Ad Overlay Listeners
-document.addEventListener('DOMContentLoaded', () => {
-  if (hlsVideoPlayer) {
-    hlsVideoPlayer.addEventListener('pause', () => {
-      if (!isPreRollActive && !hlsVideoPlayer.ended && hlsVideoPlayer.currentTime > 1) {
-        const pauseAdOverlay = document.getElementById('pauseAdOverlay');
-        if (pauseAdOverlay) pauseAdOverlay.classList.remove('hidden');
+// ==========================================================================
+// Custom ExoClick VAST 4.3 Pre-Roll & Pause Ad Player Engine
+// ==========================================================================
+const VAST_URLS = [
+  "https://s.magsrv.com/v1/vast.php?idz=6050694",
+  "https://s.magsrv.com/v1/vast.php?idz=6051450",
+  "https://s.magsrv.com/v1/vast.php?idz=6051448"
+];
+const PAUSE_ZONE_ID = "6049564";
+const SKIP_COUNTDOWN = 6;
+
+let adHasPlayed = false;
+let skipTimer = null;
+let trackingEvents = { impressions: [], tracking: [], clickThrough: null };
+
+function firePixel(url) {
+  if (!url) return;
+  const img = new Image();
+  img.src = url.trim();
+}
+
+async function loadVastAd() {
+  for (let url of VAST_URLS) {
+    try {
+      const response = await fetch(url).catch(() => null);
+      if (!response) continue;
+      const text = await response.text().catch(() => null);
+      if (!text || !text.includes('<MediaFile')) continue;
+
+      const parser = new DOMParser();
+      const xml = parser.parseFromString(text, "text/xml");
+
+      const mediaFiles = xml.querySelectorAll("MediaFile");
+      let adMediaUrl = null;
+      for (let mf of mediaFiles) {
+        const src = (mf.textContent || '').trim();
+        if (src && (src.includes('.mp4') || mf.getAttribute('type') === 'video/mp4')) {
+          adMediaUrl = src;
+          break;
+        }
       }
-    });
+      if (!adMediaUrl && mediaFiles.length > 0) {
+        adMediaUrl = (mediaFiles[0].textContent || '').trim();
+      }
 
-    hlsVideoPlayer.addEventListener('play', () => {
-      const pauseAdOverlay = document.getElementById('pauseAdOverlay');
-      if (pauseAdOverlay) pauseAdOverlay.classList.add('hidden');
-    });
+      if (!adMediaUrl) continue;
+
+      trackingEvents.impressions = [];
+      trackingEvents.tracking = [];
+
+      xml.querySelectorAll("Impression").forEach(el => trackingEvents.impressions.push(el.textContent.trim()));
+      xml.querySelectorAll("Tracking").forEach(el => {
+        trackingEvents.tracking.push({ event: el.getAttribute("event"), url: el.textContent.trim() });
+      });
+
+      const clickThrough = xml.querySelector("ClickThrough");
+      trackingEvents.clickThrough = clickThrough ? clickThrough.textContent.trim() : null;
+
+      return adMediaUrl;
+    } catch (e) {
+      console.error("VAST Fetch Error:", e);
+    }
   }
+  return null;
+}
 
-  const closePauseAdBtn = document.getElementById('closePauseAdBtn');
-  const resumePlayBtn = document.getElementById('resumePlayBtn');
-
-  if (closePauseAdBtn) {
-    const handleClose = (e) => {
-      if (e) e.stopPropagation();
-      const pauseAdOverlay = document.getElementById('pauseAdOverlay');
-      if (pauseAdOverlay) pauseAdOverlay.classList.add('hidden');
-    };
-    closePauseAdBtn.onclick = handleClose;
-    closePauseAdBtn.ontouchstart = handleClose;
-  }
-
-  if (resumePlayBtn) {
-    const handleResume = (e) => {
-      if (e) e.stopPropagation();
-      const pauseAdOverlay = document.getElementById('pauseAdOverlay');
-      if (pauseAdOverlay) pauseAdOverlay.classList.add('hidden');
-      if (hlsVideoPlayer) hlsVideoPlayer.play();
-    };
-    resumePlayBtn.onclick = handleResume;
-    resumePlayBtn.ontouchstart = handleResume;
-  }
-
-  initWatchPage();
-});
-
-// ==========================================================================
-// Custom Lightweight Native ExoClick VAST 3.0 Pre-Roll Engine (No IMA SDK needed!)
-// ==========================================================================
-const PRIMARY_VAST_TAG = 'https://s.magsrv.com/v1/vast.php?idz=6051450';
-const FALLBACK_VAST_TAG = 'https://s.magsrv.com/v1/vast.php?idz=6051448';
-
-async function playCustomVastPreRoll(video, onAdFinished) {
-  const overlay = document.getElementById('vastAdOverlay');
-  const skipBtn = document.getElementById('vastSkipBtn');
-  const timerSpan = document.getElementById('vastTimer');
-  const sponsorLink = document.getElementById('vastSponsorLink');
-
-  isPreRollActive = true;
-  let adCompleted = false;
-
-  const finishAd = () => {
-    if (adCompleted) return;
-    adCompleted = true;
-    isPreRollActive = false;
-    if (overlay) overlay.classList.add('hidden');
-    hlsVideoPlayer.onended = null;
-    hlsVideoPlayer.onclick = null;
+function playCustomVastPreRoll(video, onAdFinished) {
+  if (adHasPlayed) {
     onAdFinished();
-  };
+    return;
+  }
 
-  try {
-    let response = await fetch(PRIMARY_VAST_TAG).catch(() => null);
-    let xmlText = response ? await response.text().catch(() => null) : null;
+  const adLayer = document.getElementById('adLayer');
+  const adVideo = document.getElementById('adVideo');
+  const skipBtn = document.getElementById('skipBtn');
 
-    if (!xmlText || !xmlText.includes('<MediaFile')) {
-      // Try fallback VAST tag if primary tag has no fill
-      response = await fetch(FALLBACK_VAST_TAG).catch(() => null);
-      xmlText = response ? await response.text().catch(() => null) : null;
-    }
-
-    if (!xmlText || !xmlText.includes('<MediaFile')) {
-      console.warn('ExoClick VAST: No active ad fill. Starting main video immediately.');
-      finishAd();
-      return;
-    }
-
-    const parser = new DOMParser();
-    const xmlDoc = parser.parseFromString(xmlText, 'text/xml');
-
-    // Extract MediaFile (MP4 Ad URL)
-    const mediaFiles = xmlDoc.getElementsByTagName('MediaFile');
-    let adMediaUrl = null;
-    for (let mf of mediaFiles) {
-      const src = (mf.textContent || '').trim();
-      if (src && (src.endsWith('.mp4') || src.includes('.mp4') || mf.getAttribute('type') === 'video/mp4')) {
-        adMediaUrl = src;
-        break;
-      }
-    }
-
-    if (!adMediaUrl && mediaFiles.length > 0) {
-      adMediaUrl = (mediaFiles[0].textContent || '').trim();
-    }
-
+  loadVastAd().then(adMediaUrl => {
     if (!adMediaUrl) {
-      console.warn('ExoClick VAST: Could not parse ad MP4 URL. Starting main video.');
-      finishAd();
+      adHasPlayed = true;
+      if (adLayer) adLayer.style.display = "none";
+      onAdFinished();
       return;
     }
 
-    // Extract ClickThrough URL
-    const clickThroughs = xmlDoc.getElementsByTagName('ClickThrough');
-    const clickUrl = clickThroughs.length > 0 ? (clickThroughs[0].textContent || '').trim() : 'https://exotichub.freeerentalagreement.com';
+    if (adLayer && adVideo && skipBtn) {
+      adLayer.style.display = "block";
+      skipBtn.style.display = "block";
+      adVideo.src = adMediaUrl;
 
-    // Extract & Fire Impression Tracker
-    const impressions = xmlDoc.getElementsByTagName('Impression');
-    if (impressions.length > 0) {
-      const impUrl = (impressions[0].textContent || '').trim();
-      if (impUrl) {
-        const img = new Image();
-        img.src = impUrl;
+      if (trackingEvents.clickThrough) {
+        adVideo.style.cursor = 'pointer';
+        adVideo.onclick = () => {
+          window.open(trackingEvents.clickThrough, '_blank');
+        };
       }
-    }
 
-    // Show Overlay
-    if (overlay) overlay.classList.remove('hidden');
-    if (sponsorLink) sponsorLink.href = clickUrl;
+      adVideo.play().then(() => {
+        if (playerLoader) playerLoader.classList.add('hidden');
+      }).catch(err => {
+        console.warn('Ad autoplay restricted, attempting muted play:', err);
+        adVideo.muted = true;
+        adVideo.play().catch(() => {
+          endAdPlayback(onAdFinished);
+        });
+      });
 
-    let countdown = 5;
-    if (timerSpan) timerSpan.textContent = countdown;
-    if (skipBtn) {
-      skipBtn.disabled = true;
-      skipBtn.style.opacity = '0.6';
-      skipBtn.style.cursor = 'not-allowed';
-      skipBtn.innerHTML = `Skip Ad in <span id="vastTimer">${countdown}</span>s`;
-    }
+      // Fire Initial Impression Beacons
+      trackingEvents.impressions.forEach(firePixel);
 
-    const timerInterval = setInterval(() => {
-      countdown--;
-      const curTimerSpan = document.getElementById('vastTimer');
-      if (curTimerSpan) curTimerSpan.textContent = countdown;
+      // Skip Timer Logic
+      let timeLeft = SKIP_COUNTDOWN;
+      skipBtn.innerText = `Skip in ${timeLeft}s`;
+      skipBtn.classList.remove('active');
 
-      if (countdown <= 0) {
-        clearInterval(timerInterval);
-        if (skipBtn) {
-          skipBtn.disabled = false;
-          skipBtn.style.opacity = '1';
-          skipBtn.style.cursor = 'pointer';
-          skipBtn.innerHTML = `Skip Ad <i class="fa-solid fa-forward-step"></i>`;
-          
+      if (skipTimer) clearInterval(skipTimer);
+      skipTimer = setInterval(() => {
+        timeLeft--;
+        if (timeLeft > 0) {
+          skipBtn.innerText = `Skip in ${timeLeft}s`;
+        } else {
+          clearInterval(skipTimer);
+          skipBtn.innerText = "Skip Ad";
+          skipBtn.classList.add('active');
+
           const handleSkip = (e) => {
-            if (e) {
-              e.preventDefault();
-              e.stopPropagation();
-            }
-            clearInterval(timerInterval);
-            finishAd();
+            if (e) e.stopPropagation();
+            endAdPlayback(onAdFinished);
           };
           skipBtn.onclick = handleSkip;
           skipBtn.ontouchstart = handleSkip;
         }
-      }
-    }, 1000);
+      }, 1000);
 
-    // Play Ad MP4 Video in Player
-    hlsVideoPlayer.src = adMediaUrl;
-    hlsVideoPlayer.onended = () => {
-      clearInterval(timerInterval);
-      finishAd();
-    };
+      adVideo.onended = () => endAdPlayback(onAdFinished);
+    } else {
+      adHasPlayed = true;
+      onAdFinished();
+    }
+  });
+}
 
-    hlsVideoPlayer.play().then(() => {
-      if (playerLoader) playerLoader.classList.add('hidden');
-    }).catch(e => {
-      console.warn('Autoplay pre-roll ad policy restriction on mobile:', e);
-      if (playerLoader) playerLoader.classList.add('hidden');
-      const bigPlayBtn = document.getElementById('bigPlayBtn');
-      if (bigPlayBtn) {
-        bigPlayBtn.style.display = 'flex';
-        bigPlayBtn.onclick = (evt) => {
-          evt.stopPropagation();
-          bigPlayBtn.style.display = 'none';
-          hlsVideoPlayer.play().catch(() => finishAd());
-        };
-      }
-    });
+function endAdPlayback(onAdFinished) {
+  if (skipTimer) clearInterval(skipTimer);
+  const adLayer = document.getElementById('adLayer');
+  const adVideo = document.getElementById('adVideo');
 
-  } catch (err) {
-    console.warn('ExoClick Custom VAST Error:', err);
-    finishAd();
+  if (adVideo) {
+    adVideo.pause();
+    adVideo.onended = null;
+  }
+  if (adLayer) adLayer.style.display = "none";
+  adHasPlayed = true;
+
+  // Fire skip/close tracking pixels
+  trackingEvents.tracking
+    .filter(t => t.event === "skip" || t.event === "close")
+    .forEach(t => firePixel(t.url));
+
+  if (typeof onAdFinished === 'function') {
+    onAdFinished();
+  } else if (hlsVideoPlayer) {
+    hlsVideoPlayer.play();
   }
 }
+
+// Video Pause Ad Integration
+if (hlsVideoPlayer) {
+  hlsVideoPlayer.addEventListener('pause', () => {
+    if (!hlsVideoPlayer.ended && adHasPlayed && hlsVideoPlayer.currentTime > 1) {
+      showPauseAd();
+    }
+  });
+
+  hlsVideoPlayer.addEventListener('play', () => {
+    closePauseAd();
+  });
+}
+
+function showPauseAd() {
+  const pauseBannerLayer = document.getElementById('pauseBannerLayer');
+  const pauseAdSlot = document.getElementById('pauseAdSlot');
+  if (pauseBannerLayer) pauseBannerLayer.style.display = "block";
+  if (pauseAdSlot && !pauseAdSlot.hasChildNodes()) {
+    pauseAdSlot.innerHTML = `
+      <ins class="eas6a97888e38" data-zoneid="${PAUSE_ZONE_ID}"></ins>
+    `;
+    const script = document.createElement("script");
+    script.src = "https://a.magsrv.com/ad-provider.js";
+    script.async = true;
+    script.onload = () => {
+      (window.AdProvider = window.AdProvider || []).push({"serve": {}});
+    };
+    pauseAdSlot.appendChild(script);
+  }
+}
+
+function closePauseAd() {
+  const pauseBannerLayer = document.getElementById('pauseBannerLayer');
+  if (pauseBannerLayer) pauseBannerLayer.style.display = "none";
+}
+
 
 
 
