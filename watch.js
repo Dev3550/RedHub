@@ -231,8 +231,6 @@ function loadHlsStream(streamUrl) {
     return;
   }
 
-  const bigPlayBtn = document.getElementById('bigPlayBtn');
-
   const startPlayback = () => {
     if (!hlsVideoPlayer) return;
 
@@ -240,35 +238,20 @@ function loadHlsStream(streamUrl) {
     if (playPromise !== undefined) {
       playPromise.then(() => {
         if (playerLoader) playerLoader.classList.add('hidden');
-        if (bigPlayBtn) bigPlayBtn.style.display = 'none';
       }).catch(err => {
         console.warn('Unmuted play blocked by browser, attempting muted autoplay fallback:', err.message);
-        // Fallback: Mute & play to bypass aggressive mobile browser autoplay restrictions
         hlsVideoPlayer.muted = true;
         hlsVideoPlayer.play().then(() => {
           if (playerLoader) playerLoader.classList.add('hidden');
-          if (bigPlayBtn) bigPlayBtn.style.display = 'none';
         }).catch(err2 => {
-          console.warn('Muted play also required user gesture:', err2.message);
+          console.warn('Playback requires user interaction on native controls:', err2.message);
           if (playerLoader) playerLoader.classList.add('hidden');
-          if (bigPlayBtn) bigPlayBtn.style.display = 'flex';
         });
       });
     }
   };
 
-  if (bigPlayBtn) {
-    const handleBigPlay = (e) => {
-      if (e) e.stopPropagation();
-      hlsVideoPlayer.muted = false; // Unmute on explicit user gesture
-      startPlayback();
-    };
-    bigPlayBtn.onclick = handleBigPlay;
-    bigPlayBtn.ontouchstart = handleBigPlay;
-  }
-
   hlsVideoPlayer.onplay = () => {
-    if (bigPlayBtn) bigPlayBtn.style.display = 'none';
     if (playerLoader) playerLoader.classList.add('hidden');
     if (typeof window.closePauseAd === 'function') {
       window.closePauseAd();
