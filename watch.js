@@ -455,4 +455,97 @@ function escapeHtml(str) {
   return str.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;");
 }
 
-document.addEventListener('DOMContentLoaded', initWatchPage);
+// ==========================================================================
+// ExoClick VAST 2.0/3.0/4.0 In-Video Ads Integration (Zone ID: 6051448)
+// ==========================================================================
+const VAST_TAG_URL = 'https://s.magsrv.com/v1/vast.php?idz=6051448';
+let adsManager = null;
+let adsLoader = null;
+let adDisplayContainer = null;
+
+function setupExoClickVastAds() {
+  if (typeof google === 'undefined' || !google.ima) {
+    console.warn('Google IMA SDK not loaded yet. Delaying VAST setup.');
+    return;
+  }
+
+  const adContainer = document.getElementById('adContainer');
+  const videoElement = document.getElementById('hlsVideoPlayer');
+  if (!adContainer || !videoElement) return;
+
+  try {
+    google.ima.settings.setVpaidMode(google.ima.ImaSdkSettings.VpaidMode.ENABLED);
+
+    adDisplayContainer = new google.ima.AdDisplayContainer(adContainer, videoElement);
+    adsLoader = new google.ima.AdsLoader(adDisplayContainer);
+
+    adsLoader.addEventListener(
+      google.ima.AdsManagerLoadedEvent.Type.ADS_MANAGER_LOADED,
+      onAdsManagerLoaded,
+      false
+    );
+    adsLoader.addEventListener(
+      google.ima.AdErrorEvent.Type.AD_ERROR,
+      onAdError,
+      false
+    );
+
+    videoElement.addEventListener('play', () => {
+      if (adDisplayContainer) {
+        try { adDisplayContainer.initialize(); } catch(_) {}
+      }
+    }, { once: true });
+
+    requestVastAds();
+  } catch (err) {
+    console.warn('ExoClick VAST initialization exception:', err);
+  }
+}
+
+function requestVastAds() {
+  if (!adsLoader) return;
+  const adsRequest = new google.ima.AdsRequest();
+  adsRequest.adTagUrl = VAST_TAG_URL;
+  adsRequest.linearAdSlotWidth = hlsVideoPlayer.clientWidth || 640;
+  adsRequest.linearAdSlotHeight = hlsVideoPlayer.clientHeight || 360;
+  adsRequest.nonLinearAdSlotWidth = hlsVideoPlayer.clientWidth || 640;
+  adsRequest.nonLinearAdSlotHeight = 150;
+
+  adsLoader.requestAds(adsRequest);
+}
+
+function onAdsManagerLoaded(adsManagerLoadedEvent) {
+  const adsRenderingSettings = new google.ima.AdsRenderingSettings();
+  adsRenderingSettings.restoreCustomPlaybackStateOnAdBreakComplete = true;
+
+  adsManager = adsManagerLoadedEvent.getAdsManager(hlsVideoPlayer, adsRenderingSettings);
+
+  adsManager.addEventListener(google.ima.AdErrorEvent.Type.AD_ERROR, onAdError);
+  adsManager.addEventListener(google.ima.AdEvent.Type.CONTENT_PAUSE_REQUESTED, () => {
+    hlsVideoPlayer.pause();
+  });
+  adsManager.addEventListener(google.ima.AdEvent.Type.CONTENT_RESUME_REQUESTED, () => {
+    hlsVideoPlayer.play().catch(() => {});
+  });
+
+  try {
+    const width = hlsVideoPlayer.clientWidth || 640;
+    const height = hlsVideoPlayer.clientHeight || 360;
+    adsManager.init(width, height, google.ima.ViewMode.NORMAL);
+    adsManager.start();
+  } catch (adError) {
+    console.warn('ExoClick VAST start error:', adError);
+  }
+}
+
+function onAdError(adErrorEvent) {
+  console.log('ExoClick VAST Info:', adErrorEvent.getError ? adErrorEvent.getError() : adErrorEvent);
+  if (adsManager) adsManager.destroy();
+}
+
+document.addEventListener('DOMContentLoaded', () => {
+  initWatchPage();
+  // Small delay to ensure IMA SDK script is ready
+  setTimeout(setupExoClickVastAds, 800);
+});
+

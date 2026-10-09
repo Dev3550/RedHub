@@ -52,6 +52,8 @@
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
   <!-- HLS.js Library -->
   <script src="https://cdn.jsdelivr.net/npm/hls.js@latest"></script>
+  <!-- Google IMA SDK for ExoClick VAST In-Video Ads -->
+  <script src="https://imasdk.googleapis.com/js/sdk/v3/ima3.js"></script>
   <!-- Stylesheet -->
   <link rel="stylesheet" href="style.css">
 </head>
@@ -99,8 +101,10 @@
 
     <!-- Player Wrapper -->
     <div class="watch-player-card">
-      <div class="watch-player-wrapper">
+      <div class="watch-player-wrapper" style="position: relative;">
         <video id="hlsVideoPlayer" controls playsinline preload="auto" poster=""></video>
+        <!-- VAST In-Video Ad Container Overlay -->
+        <div id="adContainer" style="position: absolute; top: 0; left: 0; width: 100%; height: 100%; pointer-events: none; z-index: 10;"></div>
         <div class="player-loader" id="playerLoader">
           <div class="spinner"></div>
           <span>Loading ExoticHub Stream...</span>
