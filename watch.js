@@ -93,8 +93,8 @@ function applySeoMetadata(video) {
 
   const pageTitle = `${video.title} feat. ${video.channel || 'ExoticHub Creator'} – ${video.category || 'Trending'}, Desi, Indian, HD Video | ExoticHub`;
   const pageDesc = `Watch ${video.title} video. Channel: ${video.channel || 'ExoticHub Creator'}. Category: ${video.category || 'Trending'}, HD Streaming. Enjoy full-length HD video on ExoticHub!`;
-  const pageUrl = `https://hottube.devendradubey61.workers.dev/watch.html?id=${encodeURIComponent(video.id)}`;
-  const imageUrl = video.poster_url || video.thumbnail_url || 'https://hottube.devendradubey61.workers.dev/icon.png';
+  const pageUrl = `https://exotichub.freeerentalagreement.com/watch.html?id=${encodeURIComponent(video.id)}`;
+  const imageUrl = video.poster_url || video.thumbnail_url || 'https://exotichub.freeerentalagreement.com/icon.png';
 
   // 1. Page Title & Meta Description
   document.title = pageTitle;

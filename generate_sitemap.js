@@ -3,7 +3,7 @@ const path = require('path');
 
 const CATALOG_FILE = path.join(__dirname, 'sample_videos.json');
 const SITEMAP_FILE = path.join(__dirname, 'sitemap.xml');
-const BASE_URL = 'https://hottube.devendradubey61.workers.dev';
+const BASE_URL = 'https://exotichub.freeerentalagreement.com';
 
 function escapeXml(unsafe) {
   if (!unsafe) return '';
