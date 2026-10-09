@@ -96,6 +96,16 @@ function generateSitemap() {
     xml += `  </url>\n\n`;
   }
 
+  // 4. Legal & Trust Pages for Search Engine Authority
+  const legalPages = ['dmca.html', 'privacy.html', 'terms.html'];
+  for (const page of legalPages) {
+    xml += `  <url>\n`;
+    xml += `    <loc>${BASE_URL}/${page}</loc>\n`;
+    xml += `    <changefreq>monthly</changefreq>\n`;
+    xml += `    <priority>0.5</priority>\n`;
+    xml += `  </url>\n\n`;
+  }
+
   xml += `</urlset>`;
 
   fs.writeFileSync(SITEMAP_FILE, xml, 'utf-8');
@@ -103,3 +113,4 @@ function generateSitemap() {
 }
 
 generateSitemap();
+

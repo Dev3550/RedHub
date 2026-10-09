@@ -91,10 +91,16 @@ async function initWatchPage() {
 function applySeoMetadata(video) {
   if (!video) return;
 
-  const pageTitle = `${video.title} feat. ${video.channel || 'ExoticHub Creator'} – ${video.category || 'Trending'}, Desi, Indian, HD Video | ExoticHub`;
-  const pageDesc = `Watch ${video.title} video. Channel: ${video.channel || 'ExoticHub Creator'}. Category: ${video.category || 'Trending'}, HD Streaming. Enjoy full-length HD video on ExoticHub!`;
+  const titleClean = (video.title || 'Exclusive HLS Video').replace(/[^\w\s-]/gi, '');
+  const categoryStr = video.category || 'Trending';
+  const channelStr = video.channel || 'ExoticHub Creator';
+
+  const pageTitle = `${video.title} - ${categoryStr} HD Video Stream | ExoticHub`;
+  const pageDesc = `Watch ${video.title} on ExoticHub. HD streaming from ${channelStr} in ${categoryStr} category. High-speed HLS playback available globally.`;
   const pageUrl = `https://exotichub.freeerentalagreement.com/watch.html?id=${encodeURIComponent(video.id)}`;
-  const imageUrl = video.poster_url || video.thumbnail_url || 'https://exotichub.freeerentalagreement.com/icon.png';
+  // Safe Brand Logo image for Social Previews to prevent search/social crawler indexing blocks
+  const safeBrandImage = 'https://exotichub.freeerentalagreement.com/icon.png';
+  const videoPoster = video.poster_url || video.thumbnail_url || safeBrandImage;
 
   // 1. Page Title & Meta Description
   document.title = pageTitle;
@@ -106,11 +112,29 @@ function applySeoMetadata(video) {
   }
   metaDesc.content = pageDesc;
 
+  // Dynamic Long-Tail Keyword Stacking per Video
+  const longTailKeywords = [
+    titleClean,
+    `${categoryStr} video`,
+    `ExoticHub ${categoryStr}`,
+    `watch ${titleClean} online`,
+    `free ${categoryStr} stream`,
+    `${channelStr} videos`,
+    `hd ${categoryStr} playback`,
+    `trending ${categoryStr} clips`,
+    `exotichub ${titleClean}`
+  ].join(', ');
+
+  const metaKeywordsEl = document.getElementById('metaKeywords');
+  if (metaKeywordsEl) {
+    metaKeywordsEl.setAttribute('content', longTailKeywords);
+  }
+
   // 2. Canonical URL
   const canonicalEl = document.getElementById('canonicalUrl');
   if (canonicalEl) canonicalEl.href = pageUrl;
 
-  // 3. OpenGraph Social Meta Tags
+  // 3. OpenGraph Social Meta Tags (Uses Safe Brand Image)
   const setMetaProp = (id, prop, content) => {
     let el = document.getElementById(id) || document.querySelector(`meta[property="${prop}"]`);
     if (el) el.setAttribute('content', content);
@@ -119,10 +143,10 @@ function applySeoMetadata(video) {
   setMetaProp('ogType', 'og:type', 'video.other');
   setMetaProp('ogTitle', 'og:title', pageTitle);
   setMetaProp('ogDescription', 'og:description', pageDesc);
-  setMetaProp('ogImage', 'og:image', imageUrl);
+  setMetaProp('ogImage', 'og:image', safeBrandImage);
   setMetaProp('ogUrl', 'og:url', pageUrl);
 
-  // 4. Twitter Cards
+  // 4. Twitter Cards (Uses Safe Brand Image)
   const setMetaName = (id, name, content) => {
     let el = document.getElementById(id) || document.querySelector(`meta[name="${name}"]`);
     if (el) el.setAttribute('content', content);
@@ -131,7 +155,7 @@ function applySeoMetadata(video) {
   setMetaName('twitterSite', 'twitter:site', '@exotichubmedia');
   setMetaName('twitterTitle', 'twitter:title', pageTitle);
   setMetaName('twitterDescription', 'twitter:description', pageDesc);
-  setMetaName('twitterImage', 'twitter:image', imageUrl);
+  setMetaName('twitterImage', 'twitter:image', safeBrandImage);
 
   // 5. Google JSON-LD VideoObject Structured Data Schema
   const schemaScript = document.getElementById('jsonLdVideoSchema');
@@ -149,7 +173,7 @@ function applySeoMetadata(video) {
       "@type": "VideoObject",
       "name": video.title,
       "description": pageDesc,
-      "thumbnailUrl": [imageUrl],
+      "thumbnailUrl": [videoPoster],
       "uploadDate": "2026-09-13T00:00:00+00:00",
       "duration": isoDuration,
       "contentUrl": video.video_stream_url || pageUrl,
@@ -159,7 +183,7 @@ function applySeoMetadata(video) {
         "name": "ExoticHub",
         "logo": {
           "@type": "ImageObject",
-          "url": "https://ui-avatars.com/api/?name=ExoticHub&background=FF1E4B&color=fff"
+          "url": "https://exotichub.freeerentalagreement.com/icon.png"
         }
       }
     };
