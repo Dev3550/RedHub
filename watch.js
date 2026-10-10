@@ -350,6 +350,7 @@ function loadHlsStream(streamUrl, video, options = { shouldPlay: true }) {
   // Ensure no-referrer policy so CDN stream servers (inxxx/xhaccess) do not send 403 Forbidden
   if (hlsVideoPlayer) {
     hlsVideoPlayer.setAttribute('referrerpolicy', 'no-referrer');
+    try { hlsVideoPlayer.currentTime = 0; } catch (_) {}
   }
 
   const triggerStreamRefreshFallback = async () => {
@@ -376,7 +377,17 @@ function loadHlsStream(streamUrl, video, options = { shouldPlay: true }) {
       if (playerLoader) playerLoader.classList.add('hidden');
       if (hlsVideoPlayer) hlsVideoPlayer.classList.add('hidden');
       if (embedVideoPlayer && video.page_url) {
-        embedVideoPlayer.src = video.page_url;
+        let embedUrl = video.page_url;
+        if (video.page_url.includes('xhaccess.com')) {
+          const videoIdMatch = video.page_url.match(/videos\/([^/]+)/);
+          const vid = videoIdMatch ? videoIdMatch[1] : video.id;
+          embedUrl = `https://xhaccess.com/embed/${vid}`;
+        } else if (video.page_url.includes('pornhat.com')) {
+          const pornhatIdMatch = video.page_url.match(/video\/([^/]+)/);
+          const pid = pornhatIdMatch ? pornhatIdMatch[1] : video.id;
+          embedUrl = `https://www.pornhat.com/embed/${pid}`;
+        }
+        embedVideoPlayer.src = embedUrl;
         embedVideoPlayer.classList.remove('hidden');
       }
     }
@@ -388,6 +399,7 @@ function loadHlsStream(streamUrl, video, options = { shouldPlay: true }) {
       return;
     }
 
+    try { hlsVideoPlayer.currentTime = 0; } catch (_) {}
     const playPromise = hlsVideoPlayer.play();
     if (playPromise !== undefined) {
       playPromise.then(() => {
@@ -450,6 +462,7 @@ function loadHlsStream(streamUrl, video, options = { shouldPlay: true }) {
       enableWorker: true,
       lowLatencyMode: false,
       autoStartLoad: true,
+      startPosition: 0,
       startLevel: -1,
       backBufferLength: 60,
       maxBufferLength: 30,
