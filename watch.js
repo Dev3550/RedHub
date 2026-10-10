@@ -372,8 +372,13 @@ function loadHlsStream(streamUrl, video, options = { shouldPlay: true }) {
       video.video_stream_url = freshUrl;
       loadHlsStream(freshUrl, video, { shouldPlay: true });
     } else {
-      console.error('❌ Could not refresh stream URL live');
+      console.error('❌ Direct stream token unavailable, switching to fail-safe player fallback...');
       if (playerLoader) playerLoader.classList.add('hidden');
+      if (hlsVideoPlayer) hlsVideoPlayer.classList.add('hidden');
+      if (embedVideoPlayer && video.page_url) {
+        embedVideoPlayer.src = video.page_url;
+        embedVideoPlayer.classList.remove('hidden');
+      }
     }
   };
 
