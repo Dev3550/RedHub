@@ -1487,6 +1487,112 @@ body {
   100% { transform: rotate(360deg); }
 }
 
+/* ==========================================================================
+   ExoticHub Responsive Ad Container System (Clean Device-Specific Fits)
+   ========================================================================== */
+
+/* Device Visibility Toggles */
+@media (max-width: 768px) {
+  .tablet-desktop-ad, .desktop-only-ad {
+    display: none !important;
+  }
+  .mobile-only-ad {
+    display: flex !important;
+  }
+}
+
+@media (min-width: 769px) {
+  .mobile-only-ad {
+    display: none !important;
+  }
+  .tablet-desktop-ad, .desktop-only-ad {
+    display: flex !important;
+  }
+}
+
+/* 1. Desktop & Tablet Horizontal Header Display Banner (Zone 6051430) */
+.exoclick-display-banner-container {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin: 14px auto;
+  width: 100%;
+  max-width: 970px;
+  min-height: 90px;
+  background: var(--bg-card, #121218);
+  border: 1px solid var(--border-color, rgba(255, 255, 255, 0.08));
+  border-radius: 8px;
+  padding: 6px;
+  box-sizing: border-box;
+  overflow: hidden;
+  text-align: center;
+}
+
+/* 2. Mobile Banner Container (Zone 6051442) [300x100 / 300x50 / 320x50] */
+.exoclick-mobile-banner-container {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin: 12px auto;
+  width: 100%;
+  max-width: 320px;
+  min-height: 50px;
+  background: var(--bg-card, #121218);
+  border: 1px solid var(--border-color, rgba(255, 255, 255, 0.08));
+  border-radius: 8px;
+  padding: 4px;
+  box-sizing: border-box;
+  overflow: hidden;
+}
+
+/* 3. Native Recommendations Widget Container (Zone 6051416) */
+.exoclick-native-widget-container {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  margin: 16px auto;
+  width: 100%;
+  max-width: 1200px;
+  background: var(--bg-card, #121218);
+  border: 1px solid var(--border-color, rgba(255, 255, 255, 0.08));
+  border-radius: 8px;
+  padding: 10px;
+  box-sizing: border-box;
+  overflow: hidden;
+}
+
+/* 4. Outstream Video Ad Container (Zone 6051428) */
+.exoclick-outstream-container {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  margin: 16px auto;
+  width: 100%;
+  max-width: 640px;
+  background: var(--bg-card, #121218);
+  border: 1px solid var(--border-color, rgba(255, 255, 255, 0.08));
+  border-radius: 8px;
+  padding: 8px;
+  box-sizing: border-box;
+  overflow: hidden;
+}
+
+/* Ensure iframe & ins elements inside ad containers scale responsively without breaking layout */
+.exoclick-display-banner-container ins,
+.exoclick-display-banner-container iframe,
+.exoclick-mobile-banner-container ins,
+.exoclick-mobile-banner-container iframe,
+.exoclick-native-widget-container ins,
+.exoclick-native-widget-container iframe,
+.exoclick-outstream-container ins,
+.exoclick-outstream-container iframe {
+  max-width: 100% !important;
+  margin: 0 auto !important;
+  display: block !important;
+}
+
 
 
 
