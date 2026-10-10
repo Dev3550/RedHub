@@ -307,15 +307,6 @@ async function loadSmartVideoStream(video, options = { shouldPlay: true }) {
   if (!video) return;
   if (playerLoader) playerLoader.classList.remove('hidden');
 
-  // Check if session storage already has a pre-fetched fresh stream URL
-  const cachedStream = sessionStorage.getItem('fresh_stream_' + video.id);
-  if (cachedStream) {
-    console.log('⚡ Using pre-fetched live stream URL for video:', video.id);
-    loadHlsStream(cachedStream, video, options);
-    return;
-  }
-
-  // Attempt current stream URL, or fetch fresh stream URL instantly
   let streamUrl = video.video_stream_url;
   if (streamUrl && (streamUrl.includes('.t.mp4') || streamUrl.includes('.t.av1.mp4') || streamUrl.includes('/526x298.') || streamUrl.includes('trailer') || streamUrl.includes('data='))) {
     streamUrl = '';
@@ -325,7 +316,7 @@ async function loadSmartVideoStream(video, options = { shouldPlay: true }) {
     console.log('⏳ No stream URL found, auto-refreshing live link for ID:', video.id);
     const fresh = await fetchFreshStreamUrl(video.page_url);
     if (fresh) {
-      sessionStorage.setItem('fresh_stream_' + video.id, fresh);
+      video.video_stream_url = fresh;
       loadHlsStream(fresh, video, options);
       return;
     }
@@ -351,8 +342,9 @@ function loadHlsStream(streamUrl, video, options = { shouldPlay: true }) {
     return;
   }
 
-  // Ensure no-referrer policy so CDN stream servers (inxxx/xhaccess) do not send 403 Forbidden
+  // Ensure no-referrer policy so CDN stream servers do not send 403 Forbidden
   if (hlsVideoPlayer) {
+    hlsVideoPlayer.classList.remove('hidden');
     hlsVideoPlayer.setAttribute('referrerpolicy', 'no-referrer');
     try { hlsVideoPlayer.currentTime = 0; } catch (_) {}
   }
@@ -360,7 +352,7 @@ function loadHlsStream(streamUrl, video, options = { shouldPlay: true }) {
   const triggerStreamRefreshFallback = async () => {
     if (isRefreshingStream || !video || !video.page_url) return;
     isRefreshingStream = true;
-    console.warn('🔄 Video stream token expired or network error. Auto-refreshing in background...');
+    console.warn('🔄 Video stream token expired. Auto-refreshing stream in background...');
 
     if (playerLoader) {
       playerLoader.classList.remove('hidden');
@@ -372,33 +364,11 @@ function loadHlsStream(streamUrl, video, options = { shouldPlay: true }) {
     isRefreshingStream = false;
 
     if (freshUrl) {
-      console.log('✅ Stream token successfully refreshed! Resuming video playback...');
-      sessionStorage.setItem('fresh_stream_' + video.id, freshUrl);
+      console.log('✅ Stream token refreshed! Resuming video playback...');
       video.video_stream_url = freshUrl;
       loadHlsStream(freshUrl, video, { shouldPlay: true });
     } else {
-      console.error('❌ Direct stream token unavailable, switching to fail-safe embed iframe fallback...');
       if (playerLoader) playerLoader.classList.add('hidden');
-      const hlsEl = document.getElementById('hlsVideoPlayer');
-      if (hlsEl) hlsEl.classList.add('hidden');
-      
-      const embedEl = document.getElementById('embedVideoPlayer');
-      if (embedEl && video.page_url) {
-        let embedUrl = video.page_url;
-        if (video.page_url.includes('pornhat.com')) {
-          const pornhatIdMatch = video.page_url.match(/video\/([^/]+)/);
-          const pid = pornhatIdMatch ? pornhatIdMatch[1] : video.id;
-          embedUrl = `https://www.pornhat.com/embed/${pid}`;
-        } else if (video.page_url.includes('inxxx.com')) {
-          embedUrl = `https://www.inxxx.com/embed/${video.id}`;
-        } else {
-          const videoIdMatch = video.page_url.match(/videos\/([^/]+)/);
-          const vid = videoIdMatch ? videoIdMatch[1] : video.id;
-          embedUrl = `https://xhaccess.com/embed/${vid}`;
-        }
-        embedEl.src = embedUrl;
-        embedEl.classList.remove('hidden');
-      }
     }
   };
 

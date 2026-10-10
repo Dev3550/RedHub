@@ -230,21 +230,6 @@ const NATIVE_INFEED_ADS = [
 ];
 
 /**
- * Background Pre-Fetch Helper for Instant Playback
- */
-function prefetchStream(video) {
-  if (!video || !video.page_url || sessionStorage.getItem('fresh_stream_' + video.id)) return;
-  fetch(`/api/refresh-stream?page_url=${encodeURIComponent(video.page_url)}`)
-    .then(r => r.ok ? r.json() : null)
-    .then(data => {
-      if (data && data.success && data.stream_url) {
-        sessionStorage.setItem('fresh_stream_' + video.id, data.stream_url);
-      }
-    })
-    .catch(() => {});
-}
-
-/**
  * Render Video Grid with Infinite Scroll & In-Feed Native Ads
  */
 let renderedVideoCount = 0;
@@ -303,9 +288,6 @@ function renderCurrentPage(isAppend = false) {
           </div>
         </div>
       `;
-
-      card.onmouseenter = () => prefetchStream(video);
-      card.onclick = () => prefetchStream(video);
 
       videoGrid.appendChild(card);
 
@@ -415,9 +397,6 @@ function renderTrendingCarousel() {
         </div>
       </div>
     `;
-
-    card.onmouseenter = () => prefetchStream(video);
-    card.onclick = () => prefetchStream(video);
 
     trendingCarouselTrack.appendChild(card);
 
