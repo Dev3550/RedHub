@@ -95,12 +95,22 @@ if (fs.existsSync(CHECKPOINT_FILE)) {
 }
 
 function saveProgress() {
-  // Filter out any invalid non-stream or ad entries & reindex
-  catalog = catalog.filter(v => {
-    const pageUrl = v.page_url || '';
-    return (pageUrl.includes('xhaccess.com') || pageUrl.includes('inxxx.com') || pageUrl.includes('pornhat.com')) && v.video_stream_url;
-  }).map((v, i) => ({ ...v, index: i + 1 }));
+  const seenIds = new Set();
+  const seenUrls = new Set();
+  const clean = [];
 
+  for (const v of catalog) {
+    const pageUrl = v.page_url || '';
+    const validDomain = pageUrl.includes('xhaccess.com') || pageUrl.includes('inxxx.com') || pageUrl.includes('pornhat.com');
+    if (!validDomain || !v.video_stream_url || !v.id) continue;
+    if (seenIds.has(v.id) || seenUrls.has(pageUrl)) continue;
+
+    seenIds.add(v.id);
+    seenUrls.add(pageUrl);
+    clean.push(v);
+  }
+
+  catalog = clean.map((v, i) => ({ ...v, index: i + 1 }));
   fs.writeFileSync(OUTPUT_FILE, JSON.stringify(catalog, null, 2), 'utf-8');
   fs.writeFileSync(CHECKPOINT_FILE, JSON.stringify(Array.from(scrapedUrls), null, 2), 'utf-8');
 }
