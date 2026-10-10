@@ -47,21 +47,15 @@ const trendingDots = document.getElementById('trendingDots');
 let trendingVideos = [];
 let currentTrendingIndex = 0;
 let trendingAutoTimer = null;
-let currentHourlySeed = '';
-let current15MinSeed = '';
+let current4MinSeed = '';
 
 /**
- * Deterministic Hourly & 15-Minute Seed Generators
+ * Deterministic 4-Minute Seed Generator (Matches 4-Min Cloud Scraper Cron)
  */
-function getHourlySeed() {
+function get4MinSeed() {
   const d = new Date();
-  return `${d.getUTCFullYear()}-${d.getUTCMonth()}-${d.getUTCDate()}-${d.getUTCHours()}`;
-}
-
-function get15MinSeed() {
-  const d = new Date();
-  const quarter = Math.floor(d.getUTCMinutes() / 15);
-  return `${d.getUTCFullYear()}-${d.getUTCMonth()}-${d.getUTCDate()}-${d.getUTCHours()}-${quarter}`;
+  const interval = Math.floor(d.getUTCMinutes() / 4);
+  return `${d.getUTCFullYear()}-${d.getUTCMonth()}-${d.getUTCDate()}-${d.getUTCHours()}-${interval}`;
 }
 
 /**
@@ -124,15 +118,18 @@ async function initApp() {
     title: cleanExoticHubBranding(v.title)
   }));
 
-  // Store active seeds
-  currentHourlySeed = getHourlySeed();
-  current15MinSeed = get15MinSeed();
+  // Store active seed
+  current4MinSeed = get4MinSeed();
 
-  // 1-Hour Homepage Auto-Shuffle
-  videosData = seededShuffle(videosData, currentHourlySeed);
+  // Separate videos with active, valid stream URLs to place at top of feed
+  const freshVideos = videosData.filter(v => v.video_stream_url && !v.video_stream_url.includes('.t.mp4') && !v.video_stream_url.includes('trailer'));
+  const otherVideos = videosData.filter(v => !freshVideos.includes(v));
+
+  // 4-Minute Auto-Shuffle matching 4-Min Cloud Scraper Cron
+  videosData = [...seededShuffle(freshVideos, current4MinSeed), ...seededShuffle(otherVideos, current4MinSeed)];
   filteredVideos = [...videosData];
 
-  // 15-Minute Trending Carousel Auto-Shuffle with 8 diverse category videos
+  // 4-Minute Trending Carousel Auto-Shuffle with 8 diverse category videos
   updateTrendingSelection();
 
   // Check search query parameter in URL
@@ -147,15 +144,15 @@ async function initApp() {
   renderCurrentPage();
   setupEventListeners();
 
-  // Schedule auto-shuffle check every minute
-  setInterval(checkAutoShuffleTimers, 60000);
+  // Schedule auto-shuffle check every 30 seconds
+  setInterval(checkAutoShuffleTimers, 30000);
 }
 
 /**
  * Update Trending Video Selection (8 videos from diverse categories)
  */
 function updateTrendingSelection() {
-  const shuffledForTrending = seededShuffle([...videosData], current15MinSeed);
+  const shuffledForTrending = seededShuffle([...videosData], current4MinSeed);
   const categoryMap = new Map();
   trendingVideos = [];
 
@@ -174,36 +171,24 @@ function updateTrendingSelection() {
 }
 
 /**
- * Check if 1-Hour or 15-Min timer interval has rotated
+ * Check if 4-Minute timer interval has rotated
  */
 function checkAutoShuffleTimers() {
-  const newHourlySeed = getHourlySeed();
-  const new15MinSeed = get15MinSeed();
+  const new4MinSeed = get4MinSeed();
 
-  let shouldRenderGrid = false;
-  let shouldRenderTrending = false;
+  if (new4MinSeed !== current4MinSeed) {
+    current4MinSeed = new4MinSeed;
+    const freshVideos = videosData.filter(v => v.video_stream_url && !v.video_stream_url.includes('.t.mp4') && !v.video_stream_url.includes('trailer'));
+    const otherVideos = videosData.filter(v => !freshVideos.includes(v));
+    videosData = [...seededShuffle(freshVideos, current4MinSeed), ...seededShuffle(otherVideos, current4MinSeed)];
 
-  if (newHourlySeed !== currentHourlySeed) {
-    currentHourlySeed = newHourlySeed;
-    videosData = seededShuffle(videosData, currentHourlySeed);
     if (!searchInput || !searchInput.value.trim()) {
       filteredVideos = [...videosData];
-      shouldRenderGrid = true;
     }
-  }
 
-  if (new15MinSeed !== current15MinSeed) {
-    current15MinSeed = new15MinSeed;
     updateTrendingSelection();
-    shouldRenderTrending = true;
-  }
-
-  if (shouldRenderTrending) {
     currentTrendingIndex = 0;
     renderTrendingCarousel();
-  }
-
-  if (shouldRenderGrid) {
     renderCurrentPage();
   }
 }

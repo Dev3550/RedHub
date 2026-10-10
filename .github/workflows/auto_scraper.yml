@@ -2,8 +2,8 @@ name: ExoticHub Auto Scraper Cron
 
 on:
   schedule:
-    # Run every 15 minutes automatically to refresh old stream tokens & add latest videos
-    - cron: '*/15 * * * *'
+    # Run every 4 minutes automatically to refresh old stream tokens & add latest videos
+    - cron: '*/4 * * * *'
   push:
     # Trigger cloud scraping on every push to main
     branches:
