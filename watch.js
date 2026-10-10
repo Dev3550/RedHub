@@ -316,7 +316,7 @@ async function loadSmartVideoStream(video, options = { shouldPlay: true }) {
 
   // Attempt current stream URL, or fetch fresh stream URL instantly
   let streamUrl = video.video_stream_url;
-  if (streamUrl && (streamUrl.includes('.t.mp4') || streamUrl.includes('.t.av1.mp4') || streamUrl.includes('/526x298.') || streamUrl.includes('trailer'))) {
+  if (streamUrl && (streamUrl.includes('.t.mp4') || streamUrl.includes('.t.av1.mp4') || streamUrl.includes('/526x298.') || streamUrl.includes('trailer') || streamUrl.includes('data='))) {
     streamUrl = '';
   }
 

@@ -271,10 +271,10 @@ async function extractStreamDetails(pageUrl) {
       } catch (_) {}
     }
 
-    // 3. Fallback regex for MP4 only if not trailer/thumb
+    // 3. Fallback regex for MP4 only if not trailer/thumb/IP-locked
     if (!hlsUrl && !mp4Url) {
       const mp4Matches = html.match(/(https?:\\?\/\\?\/[^"' ]+\.mp4[^"' ]*)/gi) || [];
-      const validMp4 = mp4Matches.map(u => u.replace(/\\/g, '')).filter(u => !u.includes('.t.mp4') && !u.includes('.t.av1.mp4') && !u.includes('trailer') && !isAdOrTracker(u));
+      const validMp4 = mp4Matches.map(u => u.replace(/\\/g, '')).filter(u => !u.includes('.t.mp4') && !u.includes('.t.av1.mp4') && !u.includes('trailer') && !u.includes('data=') && !isAdOrTracker(u));
       if (validMp4.length > 0) {
         mp4Url = validMp4[0];
       }
