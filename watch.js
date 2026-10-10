@@ -201,22 +201,94 @@ function applySeoMetadata(video) {
   }
 
 /**
- * Load Smart Video Stream directly into HotTube Video Player
+ * Real-Time Background Stream Refresher Engine
+ * Scrapes fresh video_stream_url dynamically on hover/click or on player playback error
  */
-function loadSmartVideoStream(video) {
-  const streamUrl = video.video_stream_url;
-  if (!streamUrl) {
-    console.warn('No stream URL available for video ID:', video.id);
-    if (playerLoader) playerLoader.classList.add('hidden');
+async function fetchFreshStreamUrl(pageUrl) {
+  if (!pageUrl) return null;
+
+  // 1. Try local Node backend API (/api/refresh-stream)
+  try {
+    const res = await fetch(`/api/refresh-stream?page_url=${encodeURIComponent(pageUrl)}`);
+    if (res.ok) {
+      const data = await res.json();
+      if (data.success && data.stream_url) {
+        return data.stream_url;
+      }
+    }
+  } catch (_) {}
+
+  // 2. Client-side fallback scraping via CORS proxy (for static CDN deployments)
+  try {
+    const proxyUrl = `https://api.allorigins.win/raw?url=${encodeURIComponent(pageUrl)}`;
+    const res = await fetch(proxyUrl);
+    if (res.ok) {
+      const html = await res.text();
+      let streamUrl = '';
+
+      if (pageUrl.includes('inxxx.com')) {
+        const getFileMatch = html.match(/(https?:\/\/[^"'\s]+\/get_file\/[^\s"']+)/i);
+        if (getFileMatch) streamUrl = getFileMatch[1].replace(/&amp;/g, '&');
+      } else {
+        const initialsMatch = html.match(/window\.initials\s*=\s*(\{.*?\});\s*<\/script>/s);
+        if (initialsMatch && initialsMatch[1]) {
+          const parsed = JSON.parse(initialsMatch[1]);
+          const sources = parsed?.videoModel?.sources || parsed?.video?.sources;
+          if (sources?.hls) streamUrl = sources.hls;
+          else if (sources?.mp4) {
+            const keys = Object.keys(sources.mp4);
+            if (keys.length) streamUrl = sources.mp4[keys[keys.length - 1]];
+          }
+        }
+        if (!streamUrl) {
+          const m3u8Match = html.match(/(https?:\\?\/\\?\/[^"' ]+\.m3u8[^"' ]*)/i);
+          if (m3u8Match) streamUrl = m3u8Match[1].replace(/\\/g, '');
+        }
+      }
+      if (streamUrl) return streamUrl;
+    }
+  } catch (_) {}
+
+  return null;
+}
+
+let isRefreshingStream = false;
+
+/**
+ * Load Smart Video Stream directly into HotTube Video Player with instant auto-refresh
+ */
+async function loadSmartVideoStream(video) {
+  if (!video) return;
+  if (playerLoader) playerLoader.classList.remove('hidden');
+
+  // Check if session storage already has a pre-fetched fresh stream URL
+  const cachedStream = sessionStorage.getItem('fresh_stream_' + video.id);
+  if (cachedStream) {
+    console.log('⚡ Using pre-fetched live stream URL for video:', video.id);
+    loadHlsStream(cachedStream, video);
     return;
   }
-  loadHlsStream(streamUrl);
+
+  // Attempt current stream URL, or fetch fresh stream URL instantly
+  let streamUrl = video.video_stream_url;
+
+  if (!streamUrl) {
+    console.log('⏳ No stream URL found, auto-refreshing live link for ID:', video.id);
+    const fresh = await fetchFreshStreamUrl(video.page_url);
+    if (fresh) {
+      sessionStorage.setItem('fresh_stream_' + video.id, fresh);
+      loadHlsStream(fresh, video);
+      return;
+    }
+  }
+
+  loadHlsStream(streamUrl, video);
 }
 
 /**
- * Load HLS Stream via HLS.js or Native HTML5 Video Player
+ * Load HLS Stream via HLS.js or Native HTML5 Video Player with 403 Auto-Refresh Fallback
  */
-function loadHlsStream(streamUrl) {
+function loadHlsStream(streamUrl, video) {
   if (playerLoader) playerLoader.classList.remove('hidden');
 
   if (hlsInstance) {
@@ -228,6 +300,31 @@ function loadHlsStream(streamUrl) {
     if (playerLoader) playerLoader.classList.add('hidden');
     return;
   }
+
+  const triggerStreamRefreshFallback = async () => {
+    if (isRefreshingStream || !video || !video.page_url) return;
+    isRefreshingStream = true;
+    console.warn('🔄 Video stream token expired or network error. Auto-refreshing in background...');
+
+    if (playerLoader) {
+      playerLoader.classList.remove('hidden');
+      const loaderSpan = playerLoader.querySelector('span');
+      if (loaderSpan) loaderSpan.textContent = '⚡ Refreshing Live HD Stream...';
+    }
+
+    const freshUrl = await fetchFreshStreamUrl(video.page_url);
+    isRefreshingStream = false;
+
+    if (freshUrl) {
+      console.log('✅ Stream token successfully refreshed! Resuming video playback...');
+      sessionStorage.setItem('fresh_stream_' + video.id, freshUrl);
+      video.video_stream_url = freshUrl;
+      loadHlsStream(freshUrl, video);
+    } else {
+      console.error('❌ Failed to refresh stream URL for video:', video.id);
+      if (playerLoader) playerLoader.classList.add('hidden');
+    }
+  };
 
   const startPlayback = () => {
     if (!hlsVideoPlayer) return;
@@ -256,11 +353,14 @@ function loadHlsStream(streamUrl) {
     }
   };
 
+  hlsVideoPlayer.onerror = (e) => {
+    console.warn('HTML5 Video player error detected, triggering auto-refresh fallback');
+    triggerStreamRefreshFallback();
+  };
+
   hlsVideoPlayer.onpause = () => {
-    if (!hlsVideoPlayer.ended && adHasPlayed && hlsVideoPlayer.currentTime > 1) {
-      if (typeof window.showPauseAd === 'function') {
-        window.showPauseAd();
-      }
+    if (!hlsVideoPlayer.ended && typeof window.showPauseAd === 'function' && hlsVideoPlayer.currentTime > 1) {
+      window.showPauseAd();
     }
   };
 
@@ -277,11 +377,11 @@ function loadHlsStream(streamUrl) {
       enableWorker: true,
       lowLatencyMode: false,
       autoStartLoad: true,
-      startLevel: -1,                  // Auto adaptive initial level for instant play
+      startLevel: -1,
       backBufferLength: 60,
-      maxBufferLength: 30,             // Fast initial buffer fill (30s)
-      maxMaxBufferLength: 90,          // Max 90s buffer
-      maxBufferSize: 60 * 1024 * 1024, // 60 MB memory allocation
+      maxBufferLength: 30,
+      maxMaxBufferLength: 90,
+      maxBufferSize: 60 * 1024 * 1024,
       maxBufferHole: 0.2,
       highBufferWatchdogPeriod: 1,
       progressive: true,
@@ -293,33 +393,26 @@ function loadHlsStream(streamUrl) {
 
     hlsInstance.on(Hls.Events.MANIFEST_PARSED, (event, data) => {
       if (playerLoader) playerLoader.classList.add('hidden');
-      console.log('HLS Manifest Parsed! Available Quality Levels:', data ? data.levels : []);
-
       if (data && data.levels) {
         populateQualityDropdown(data.levels);
       }
-
       startPlayback();
     });
 
     hlsInstance.on(Hls.Events.ERROR, (event, data) => {
       if (data.fatal) {
         console.error('HLS Fatal Error detected:', data.type, data.details);
-        if (playerLoader) playerLoader.classList.add('hidden');
-        
         switch (data.type) {
           case Hls.ErrorTypes.NETWORK_ERROR:
-            console.warn('Network error encountered, attempting reload...');
-            hlsInstance.startLoad();
+            console.warn('Network error encountered, auto-refreshing stream URL...');
+            triggerStreamRefreshFallback();
             break;
           case Hls.ErrorTypes.MEDIA_ERROR:
             console.warn('Media error encountered, attempting recovery...');
             hlsInstance.recoverMediaError();
             break;
           default:
-            hlsInstance.destroy();
-            hlsVideoPlayer.src = streamUrl;
-            startPlayback();
+            triggerStreamRefreshFallback();
             break;
         }
       }

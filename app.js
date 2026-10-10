@@ -230,6 +230,22 @@ function renderCurrentPage() {
   const end = start + itemsPerPage;
   const pageVideos = filteredVideos.slice(start, end);
 
+/**
+ * Background Pre-Fetch Helper for Instant Playback
+ */
+function prefetchStream(video) {
+  if (!video || !video.page_url || sessionStorage.getItem('fresh_stream_' + video.id)) return;
+  fetch(`/api/refresh-stream?page_url=${encodeURIComponent(video.page_url)}`)
+    .then(r => r.ok ? r.json() : null)
+    .then(data => {
+      if (data && data.success && data.stream_url) {
+        sessionStorage.setItem('fresh_stream_' + video.id, data.stream_url);
+        console.log('⚡ Background pre-fetched stream URL for video:', video.id);
+      }
+    })
+    .catch(() => {});
+}
+
   if (videoGrid) {
     videoGrid.innerHTML = '';
     pageVideos.forEach(video => {
@@ -254,7 +270,10 @@ function renderCurrentPage() {
         </div>
       `;
 
+      card.onmouseenter = () => prefetchStream(video);
+
       card.onclick = () => {
+        prefetchStream(video);
         window.location.href = `watch.html?id=${encodeURIComponent(video.id)}`;
       };
 
@@ -339,7 +358,10 @@ function renderTrendingCarousel() {
       </div>
     `;
 
+    card.onmouseenter = () => prefetchStream(video);
+
     card.onclick = () => {
+      prefetchStream(video);
       window.location.href = `watch.html?id=${encodeURIComponent(video.id)}`;
     };
 

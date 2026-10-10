@@ -71,6 +71,9 @@ function generateSitemap() {
   for (const item of catalog) {
     const rawWatchUrl = `${BASE_URL}/watch.html?id=${encodeURIComponent(item.id)}`;
     const watchUrl = escapeXml(rawWatchUrl);
+    const rawEmbedUrl = `${BASE_URL}/watch.html?id=${encodeURIComponent(item.id)}&embed=1`;
+    const embedUrl = escapeXml(rawEmbedUrl);
+
     const title = escapeXml(item.title || 'ExoticHub HD Video');
     const category = escapeXml(item.category || 'Trending');
     const channel = escapeXml(item.channel || 'ExoticHub Creator');
@@ -82,7 +85,7 @@ function generateSitemap() {
 
     let rawStream = item.video_stream_url;
     if (rawStream && rawStream.startsWith('//')) rawStream = 'https:' + rawStream;
-    const streamUrl = rawStream ? escapeXml(rawStream) : null;
+    const streamUrl = (rawStream && rawStream !== rawWatchUrl) ? escapeXml(rawStream) : null;
     
     const durationSec = parseDurationSeconds(item.duration);
 
@@ -97,7 +100,7 @@ function generateSitemap() {
     if (streamUrl) {
       xml += `      <video:content_loc>${streamUrl}</video:content_loc>\n`;
     }
-    xml += `      <video:player_loc allow_embed="yes">${watchUrl}</video:player_loc>\n`;
+    xml += `      <video:player_loc allow_embed="yes">${embedUrl}</video:player_loc>\n`;
     xml += `      <video:duration>${durationSec}</video:duration>\n`;
     xml += `      <video:publication_date>2026-09-13T00:00:00+00:00</video:publication_date>\n`;
     xml += `      <video:category>${category}</video:category>\n`;
