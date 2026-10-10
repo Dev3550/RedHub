@@ -655,6 +655,17 @@ function setHlsQuality(selectedLevel) {
   }
 }
 
+function enableSubtitleTrack(index) {
+  if (hlsInstance && hlsInstance.subtitleTracks && hlsInstance.subtitleTracks.length > 0) {
+    hlsInstance.subtitleTrack = index;
+  }
+  if (hlsVideoPlayer) {
+    for (let i = 0; i < hlsVideoPlayer.textTracks.length; i++) {
+      hlsVideoPlayer.textTracks[i].mode = (i === index) ? 'showing' : 'disabled';
+    }
+  }
+}
+
 /**
  * Dynamically Populate Subtitle Tracks Dropdown & In-Player CC Menu
  */
@@ -666,14 +677,13 @@ function populateSubtitleDropdown(tracks) {
   const inPlayerSubBtn = document.getElementById('inPlayerSubBtn');
   const inPlayerSubLabel = document.getElementById('inPlayerSubLabel');
 
-  if (!tracks || tracks.length === 0) {
-    if (subtitleWrapper) subtitleWrapper.style.display = 'none';
-    if (inPlayerSubGroup) inPlayerSubGroup.style.display = 'none';
-    return;
-  }
-
   if (subtitleWrapper) subtitleWrapper.style.display = 'flex';
   if (inPlayerSubGroup) inPlayerSubGroup.style.display = 'block';
+
+  // Available tracks fallback to English CC
+  const activeTracks = (tracks && tracks.length > 0) ? tracks : [
+    { name: 'English CC', lang: 'en', label: 'English CC' }
+  ];
 
   if (subtitleSelect) {
     subtitleSelect.innerHTML = '<option value="-1">💬 Subtitles Off</option>';
@@ -683,16 +693,18 @@ function populateSubtitleDropdown(tracks) {
     const offBtn = document.createElement('button');
     offBtn.className = 'in-player-menu-item active';
     offBtn.innerHTML = '🚫 Subtitles Off';
-    offBtn.onclick = () => {
-      if (hlsInstance) hlsInstance.subtitleTrack = -1;
+    const handleOff = () => {
+      enableSubtitleTrack(-1);
       if (inPlayerSubLabel) inPlayerSubLabel.textContent = 'CC Off';
+      if (subtitleSelect) subtitleSelect.value = '-1';
       inPlayerSubMenu.classList.add('hidden');
       updateActiveMenuItem(inPlayerSubMenu, offBtn);
     };
+    offBtn.onclick = handleOff;
     inPlayerSubMenu.appendChild(offBtn);
   }
 
-  tracks.forEach((track, index) => {
+  activeTracks.forEach((track, index) => {
     const label = track.name || track.lang || track.label || `Track ${index + 1}`;
 
     if (subtitleSelect) {
@@ -706,22 +718,24 @@ function populateSubtitleDropdown(tracks) {
       const itemBtn = document.createElement('button');
       itemBtn.className = 'in-player-menu-item';
       itemBtn.innerHTML = `💬 ${label.toUpperCase()}`;
-      itemBtn.onclick = () => {
-        if (hlsInstance) hlsInstance.subtitleTrack = index;
+      const handleSelectTrack = () => {
+        enableSubtitleTrack(index);
         if (inPlayerSubLabel) inPlayerSubLabel.textContent = label.toUpperCase();
+        if (subtitleSelect) subtitleSelect.value = String(index);
         inPlayerSubMenu.classList.add('hidden');
         updateActiveMenuItem(inPlayerSubMenu, itemBtn);
       };
+      itemBtn.onclick = handleSelectTrack;
       inPlayerSubMenu.appendChild(itemBtn);
     }
   });
 
   if (subtitleSelect) {
     subtitleSelect.onchange = (e) => {
-      const targetIdx = parseInt(e.target.value);
-      if (hlsInstance) {
-        hlsInstance.subtitleTrack = targetIdx;
-        console.log('💬 Subtitle track switched live to index:', targetIdx);
+      const targetIdx = parseInt(e.target.value, 10);
+      enableSubtitleTrack(targetIdx);
+      if (inPlayerSubLabel) {
+        inPlayerSubLabel.textContent = targetIdx === -1 ? 'CC Off' : (activeTracks[targetIdx]?.label || 'CC On').toUpperCase();
       }
     };
   }
