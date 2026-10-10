@@ -3,7 +3,7 @@ const path = require('path');
 const { fetchHtml, extractStreamDetails } = require('./utils');
 
 const CATALOG_FILE = path.join(__dirname, 'sample_videos.json');
-const CONCURRENCY = 15; // 15 Parallel Async Workers
+const CONCURRENCY = 10; // 10 Stable Async Workers
 
 async function refreshAllExpiredTokens() {
   console.log('==================================================================');
@@ -25,6 +25,16 @@ async function refreshAllExpiredTokens() {
 
   // Create queue of items to process
   const queue = catalog.map((item, index) => ({ item, index }));
+
+  async function saveProgress() {
+    try {
+      const validItems = catalog.filter(v => v.video_stream_url).map((v, idx) => ({
+        ...v,
+        index: idx + 1
+      }));
+      fs.writeFileSync(CATALOG_FILE, JSON.stringify(validItems, null, 2), 'utf-8');
+    } catch (_) {}
+  }
 
   async function worker(workerId) {
     while (queue.length > 0) {
@@ -74,6 +84,11 @@ async function refreshAllExpiredTokens() {
       processedCount++;
       if (processedCount % 100 === 0 || queue.length === 0) {
         console.log(` ⏳ Audited [${processedCount}/${catalog.length}] items | Valid: ${validCount} | Refreshed: ${updatedCount}`);
+      }
+
+      if (processedCount % 500 === 0) {
+        await saveProgress();
+        if (global.gc) global.gc();
       }
     }
   }
@@ -125,3 +140,4 @@ async function refreshAllExpiredTokens() {
 }
 
 refreshAllExpiredTokens();
+
