@@ -61,7 +61,28 @@ async function initWatchPage() {
   currentVideo = catalogData.find(v => String(v.id) === String(videoId));
 
   if (!currentVideo) {
-    currentVideo = catalogData[0];
+    if (videoId) {
+      // Dynamic on-demand video item auto-discovery
+      const cleanTitle = 'Porn ExoticHub ' + videoId.replace(/-/g, ' ').replace(/\b\w/g, c => c.toUpperCase());
+      const pageUrl = videoId.includes('inxxx') || !videoId.startsWith('xh')
+        ? `https://www.inxxx.com/v/${videoId.replace(/\.xxx-video$/, '')}.xxx-video`
+        : `https://xhaccess.com/videos/${videoId}`;
+
+      currentVideo = {
+        id: videoId,
+        title: cleanTitle,
+        category: 'Trending',
+        duration: '10:00',
+        thumbnail_url: 'https://images.unsplash.com/photo-1536440136628-849c177e76a1?w=500&q=80',
+        poster_url: 'https://images.unsplash.com/photo-1536440136628-849c177e76a1?w=500&q=80',
+        page_url: pageUrl,
+        video_stream_url: '',
+        views: 185000,
+        channel: 'ExoticHub Original'
+      };
+    } else {
+      currentVideo = catalogData[0];
+    }
   }
 
   // Apply Complete SEO Keyword Stacking, OpenGraph Tags & JSON-LD VideoObject Schema
