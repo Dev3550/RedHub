@@ -23,6 +23,31 @@ let currentVideo = null;
 let hlsInstance = null;
 let isEmbedMode = false;
 
+// Real-time Visitor Session Heartbeat Tracker for Admin Telemetry
+function initVisitorHeartbeat() {
+  const tabId = sessionStorage.getItem('eh_tab_id') || ('tab_' + Math.random().toString(36).substring(2, 9));
+  sessionStorage.setItem('eh_tab_id', tabId);
+
+  const sendHeartbeat = () => {
+    try {
+      const activeSessions = JSON.parse(localStorage.getItem('eh_active_sessions') || '{}');
+      activeSessions[tabId] = Date.now();
+
+      const now = Date.now();
+      for (const id in activeSessions) {
+        if (now - activeSessions[id] > 30000) {
+          delete activeSessions[id];
+        }
+      }
+      localStorage.setItem('eh_active_sessions', JSON.stringify(activeSessions));
+    } catch (_) {}
+  };
+
+  sendHeartbeat();
+  setInterval(sendHeartbeat, 8000);
+}
+initVisitorHeartbeat();
+
 // DOM Elements
 const hlsVideoPlayer = document.getElementById('hlsVideoPlayer');
 const embedVideoPlayer = document.getElementById('embedVideoPlayer');

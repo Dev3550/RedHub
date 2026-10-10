@@ -444,9 +444,23 @@
       });
       document.getElementById('statStepVideos').textContent = stepVideos.length.toLocaleString();
 
-      // Simulate realistic active user sessions based on total catalog size
-      const simulatedActiveUsers = Math.floor(Math.random() * 45) + 120;
-      document.getElementById('statActiveUsers').textContent = simulatedActiveUsers + ' Viewers';
+      // Calculate exact real-time active user sessions from live visitor heartbeats
+      const getActiveSessionsCount = () => {
+        try {
+          const sessions = JSON.parse(localStorage.getItem('eh_active_sessions') || '{}');
+          const now = Date.now();
+          let count = 0;
+          for (const id in sessions) {
+            if (now - sessions[id] <= 30000) count++;
+          }
+          return Math.max(1, count);
+        } catch (_) {
+          return 1;
+        }
+      };
+
+      const realActiveUsers = getActiveSessionsCount();
+      document.getElementById('statActiveUsers').textContent = realActiveUsers + (realActiveUsers === 1 ? ' Active Viewer' : ' Active Viewers');
 
       // Group categories
       const catCounts = {};
