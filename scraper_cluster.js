@@ -3,14 +3,30 @@
 
 const fs = require('fs');
 const path = require('path');
-const { fetchHtml, parseCatalogPage, parseInxxxCatalogPage, extractStreamDetails, isAdOrTracker } = require('./utils');
+const { fetchHtml, parseCatalogPage, parseInxxxCatalogPage, parsePornhatCatalogPage, extractStreamDetails, isAdOrTracker } = require('./utils');
 
 const WORKER_COUNT = 70; // 70 Parallel High-Speed Async Scraper Workers
 const OUTPUT_FILE = path.resolve(__dirname, 'sample_videos.json');
 const CHECKPOINT_FILE = path.resolve(__dirname, 'checkpoint_urls.json');
 
-// Target Categories across xhaccess & inxxx
+// Target Categories across xhaccess, inxxx & pornhat
 const TARGET_CATEGORIES = [
+  // pornhat categories
+  { name: 'Brazzers', source: 'pornhat', url: 'https://www.pornhat.com/sites/brazzers/' },
+  { name: 'Indian', source: 'pornhat', url: 'https://www.pornhat.com/search/indian/' },
+  { name: 'Desi', source: 'pornhat', url: 'https://www.pornhat.com/search/desi/' },
+  { name: 'Anal', source: 'pornhat', url: 'https://www.pornhat.com/categories/anal/' },
+  { name: 'Mom', source: 'pornhat', url: 'https://www.pornhat.com/categories/mom/' },
+  { name: 'MILF', source: 'pornhat', url: 'https://www.pornhat.com/categories/milf/' },
+  { name: 'Latina', source: 'pornhat', url: 'https://www.pornhat.com/categories/latina/' },
+  { name: 'Asian', source: 'pornhat', url: 'https://www.pornhat.com/categories/asian/' },
+  { name: 'Amateur', source: 'pornhat', url: 'https://www.pornhat.com/categories/amateur/' },
+  { name: 'Blowjob', source: 'pornhat', url: 'https://www.pornhat.com/categories/blowjob/' },
+  { name: 'Teen', source: 'pornhat', url: 'https://www.pornhat.com/categories/teen/' },
+  { name: 'Japanese', source: 'pornhat', url: 'https://www.pornhat.com/categories/japanese/' },
+  { name: 'Big Tits', source: 'pornhat', url: 'https://www.pornhat.com/categories/big-tits/' },
+  { name: 'Creampie', source: 'pornhat', url: 'https://www.pornhat.com/categories/creampie/' },
+
   // xhaccess categories
   { name: 'Indian', source: 'xh', url: 'https://xhaccess.com/search/indian' },
   { name: 'Desi', source: 'xh', url: 'https://xhaccess.com/search/desi' },
@@ -82,7 +98,7 @@ function saveProgress() {
   // Filter out any invalid non-stream or ad entries & reindex
   catalog = catalog.filter(v => {
     const pageUrl = v.page_url || '';
-    return (pageUrl.includes('xhaccess.com') || pageUrl.includes('inxxx.com')) && v.video_stream_url;
+    return (pageUrl.includes('xhaccess.com') || pageUrl.includes('inxxx.com') || pageUrl.includes('pornhat.com')) && v.video_stream_url;
   }).map((v, i) => ({ ...v, index: i + 1 }));
 
   fs.writeFileSync(OUTPUT_FILE, JSON.stringify(catalog, null, 2), 'utf-8');
@@ -90,7 +106,7 @@ function saveProgress() {
 }
 
 /**
- * Discover all raw video items across xhaccess & inxxx categories
+ * Discover all raw video items across xhaccess, inxxx & pornhat categories
  */
 async function discoverAllVideoItems() {
   const allItemsMap = new Map();
@@ -100,7 +116,10 @@ async function discoverAllVideoItems() {
     const html = await fetchHtml(catObj.url);
     if (!html) continue;
 
-    const items = catObj.source === 'inxxx' ? parseInxxxCatalogPage(html) : parseCatalogPage(html);
+    let items = [];
+    if (catObj.source === 'pornhat') items = parsePornhatCatalogPage(html);
+    else if (catObj.source === 'inxxx') items = parseInxxxCatalogPage(html);
+    else items = parseCatalogPage(html);
     console.log(`   ➜ Discovered ${items.length} raw video items`);
 
     for (const item of items) {

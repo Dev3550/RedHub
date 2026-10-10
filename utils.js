@@ -13,7 +13,9 @@ const DEFAULT_HEADERS = {
  */
 async function fetchHtml(url) {
   const maxRetries = 3;
-  const referer = url.includes('inxxx.com') ? 'https://www.inxxx.com/' : 'https://xhaccess.com/';
+  let referer = 'https://xhaccess.com/';
+  if (url.includes('inxxx.com')) referer = 'https://www.inxxx.com/';
+  else if (url.includes('pornhat.com')) referer = 'https://www.pornhat.com/';
   
   for (let attempt = 1; attempt <= maxRetries; attempt++) {
     try {
@@ -64,7 +66,6 @@ function parseCatalogPage(html) {
   if (!html) return [];
   const items = [];
 
-  // 1. Try extracting structured data from script window.initials
   try {
     const initialsMatch = html.match(/window\.initials\s*=\s*(\{.*?\});\s*<\/script>/s) || html.match(/id=['"]initials-script['"]>window\.initials\s*=\s*(\{.*?\});/s);
     if (initialsMatch && initialsMatch[1]) {
@@ -77,7 +78,7 @@ function parseCatalogPage(html) {
 
         items.push({
           id: String(v.id || ''),
-          title: (v.title || '').replace(/(xHamster|xHamsters|xNXX|Pornhub|XVideos|FreePornVideo|HotTube|inxxx)/gi, 'ExoticHub').trim(),
+          title: (v.title || '').replace(/(xHamster|xHamsters|xNXX|Pornhub|XVideos|FreePornVideo|HotTube|inxxx|pornhat)/gi, 'ExoticHub').trim(),
           duration_seconds: v.duration || 0,
           duration_formatted: formatDuration(v.duration || 0),
           thumbnail_url: v.thumbURL || v.imageURL || '',
@@ -94,7 +95,6 @@ function parseCatalogPage(html) {
     console.warn(`[Warning] JSON initials parsing fallback: ${err.message}`);
   }
 
-  // 2. Fallback DOM Parsing via Cheerio
   if (items.length === 0) {
     const $ = cheerio.load(html);
 
@@ -113,7 +113,7 @@ function parseCatalogPage(html) {
       if (title && pageURL) {
         items.push({
           id: pageURL.split('/').pop() || `id-${Date.now()}`,
-          title: title.replace(/(xHamster|xHamsters|xNXX|Pornhub|XVideos|FreePornVideo|HotTube|inxxx)/gi, 'ExoticHub').trim(),
+          title: title.replace(/(xHamster|xHamsters|xNXX|Pornhub|XVideos|FreePornVideo|HotTube|inxxx|pornhat)/gi, 'ExoticHub').trim(),
           duration_seconds: 0,
           duration_formatted: duration || '10:00',
           thumbnail_url: thumbnail,
@@ -151,7 +151,7 @@ function parseInxxxCatalogPage(html) {
 
     const pageUrl = href.startsWith('http') ? href : `https://www.inxxx.com${href}`;
     const cleanId = pageUrl.split('/').pop().replace('.xxx-video', '') || `inxxx_${Date.now()}_${Math.random().toString(36).substring(2, 6)}`;
-    const cleanTitle = title.replace(/(xHamster|xHamsters|xNXX|Pornhub|XVideos|FreePornVideo|HotTube|inxxx|xxx|video)/gi, 'ExoticHub').trim() || 'ExoticHub Video';
+    const cleanTitle = title.replace(/(xHamster|xHamsters|xNXX|Pornhub|XVideos|FreePornVideo|HotTube|inxxx|pornhat|xxx|video)/gi, 'ExoticHub').trim() || 'ExoticHub Video';
 
     if (!items.some(i => i.page_url === pageUrl)) {
       items.push({
@@ -173,7 +173,50 @@ function parseInxxxCatalogPage(html) {
 }
 
 /**
- * Extract direct video stream link (HLS / MP4) from xhaccess.com or inxxx.com detail page.
+ * Parse category page HTML for pornhat.com
+ */
+function parsePornhatCatalogPage(html) {
+  if (!html) return [];
+  const items = [];
+  const $ = cheerio.load(html);
+
+  $('a[href*="/video/"]').each((_, el) => {
+    const $el = $(el);
+    const href = $el.attr('href') || '';
+    if (!href || href === '/video/' || isAdOrTracker(href)) return;
+
+    const pageUrl = href.startsWith('http') ? href : `https://www.pornhat.com${href}`;
+    const slug = href.replace(/^\/video\//, '').replace(/\/$/, '');
+    if (!slug) return;
+
+    const title = $el.attr('title') || $el.find('.video-title, .title').text().trim() || slug.replace(/-/g, ' ');
+    const img = $el.find('img').first();
+    const thumbnail = img.attr('data-src') || img.attr('src') || '';
+    const duration = $el.find('.duration, .time, .duration-badge').text().trim() || '10:00';
+
+    const cleanTitle = title.replace(/(xHamster|xHamsters|xNXX|Pornhub|XVideos|FreePornVideo|HotTube|inxxx|pornhat|xxx|video)/gi, 'ExoticHub').trim() || 'ExoticHub Video';
+
+    if (!items.some(i => i.page_url === pageUrl)) {
+      items.push({
+        id: slug,
+        title: cleanTitle.startsWith('ExoticHub') ? cleanTitle : `Porn ExoticHub ${cleanTitle}`,
+        duration_seconds: 600,
+        duration_formatted: duration,
+        thumbnail_url: thumbnail,
+        poster_url: thumbnail,
+        page_url: pageUrl,
+        stream_url: '',
+        views: Math.floor(Math.random() * 450000) + 30000,
+        channel: 'ExoticHub Original'
+      });
+    }
+  });
+
+  return items;
+}
+
+/**
+ * Extract direct video stream link (HLS / MP4) from xhaccess.com, inxxx.com, or pornhat.com detail page.
  */
 async function extractStreamDetails(pageUrl) {
   const html = await fetchHtml(pageUrl);
@@ -183,7 +226,14 @@ async function extractStreamDetails(pageUrl) {
   let hlsUrl = '';
   let mp4Url = '';
 
-  if (pageUrl.includes('inxxx.com')) {
+  if (pageUrl.includes('pornhat.com')) {
+    // Extract stream MP4 URL from pornhat.com page (get_file/...)
+    const getFileMatches = html.match(/(https?:\/\/[^"'\s]+\/get_file\/[^"'\s]*)/gi) || [];
+    const validMatches = getFileMatches.filter(u => !u.includes('trailer') && !u.includes('thumb'));
+    if (validMatches.length > 0) {
+      mp4Url = validMatches[0].replace(/\\/g, '').replace(/&amp;/g, '&');
+    }
+  } else if (pageUrl.includes('inxxx.com')) {
     // Extract stream MP4 URL from inxxx.com page (get_file/.../?v-acctoken=...)
     const getFileMatch = html.match(/(https?:\/\/[^"'\s]+\/get_file\/[^\s"']+)/i);
     if (getFileMatch) {
@@ -243,6 +293,8 @@ module.exports = {
   fetchHtml,
   parseCatalogPage,
   parseInxxxCatalogPage,
+  parsePornhatCatalogPage,
   extractStreamDetails,
   isAdOrTracker
 };
+
