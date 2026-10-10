@@ -505,10 +505,14 @@ function renderVisualCategoriesModal() {
       return false;
     });
 
-    const count = matchingVideos.length;
-    // Get thumbnail from first matching video or fallback
-    const sampleThumb = matchingVideos.length > 0
-      ? (matchingVideos[0].thumbnail_url || matchingVideos[0].poster_url)
+    // Get authentic thumbnail from first valid matching video
+    const validVideo = matchingVideos.find(v => {
+      const u = v.thumbnail_url || v.poster_url || '';
+      return u && !u.includes('data:image');
+    }) || matchingVideos[0];
+
+    const sampleThumb = validVideo
+      ? (validVideo.thumbnail_url || validVideo.poster_url)
       : 'https://images.unsplash.com/photo-1536440136628-849c177e76a1?w=500&q=80';
 
     const card = document.createElement('div');

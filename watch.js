@@ -57,8 +57,9 @@ async function initWatchPage() {
     catalogData = FALLBACK_CATALOG;
   }
 
-  // Find target video by ID
-  currentVideo = catalogData.find(v => String(v.id) === String(videoId));
+  // Find target video by ID (robust case-insensitive trimmed matching)
+  const targetIdStr = String(videoId || '').trim().toLowerCase();
+  currentVideo = catalogData.find(v => String(v.id || '').trim().toLowerCase() === targetIdStr);
 
   if (!currentVideo) {
     if (videoId) {
@@ -589,35 +590,54 @@ function setHlsQuality(selectedLevel) {
   }
 }
 
+let recDisplayCount = 12;
+let allRecommendations = [];
+let recObserver = null;
+let isRecLoading = false;
+
 /**
- * Render Recommended Videos matching current video's category
+ * Render Recommended Videos with Infinite Scroll on Watch Page
  */
 function renderRecommendations(video) {
   if (!recommendedGrid) return;
-  recommendedGrid.innerHTML = '';
 
   const catLower = (video.category || '').toLowerCase();
   
   // Filter by matching category or title keyword, excluding current video
-  let recs = catalogData.filter(v => String(v.id) !== String(video.id) && (
+  let categoryRecs = catalogData.filter(v => String(v.id) !== String(video.id) && (
     (v.category && v.category.toLowerCase() === catLower) ||
     (v.title && catLower && v.title.toLowerCase().includes(catLower))
   ));
 
-  // Fallback to general videos if category recommendations count is low
-  if (recs.length < 4) {
-    const fallbackRecs = catalogData.filter(v => String(v.id) !== String(video.id) && !recs.includes(v));
-    recs = [...recs, ...fallbackRecs];
+  // Rest of catalog for endless mixing
+  let otherRecs = catalogData.filter(v => String(v.id) !== String(video.id) && !categoryRecs.includes(v));
+
+  // Mix category recommendations first, followed by remaining catalog
+  allRecommendations = [...categoryRecs, ...otherRecs];
+  recDisplayCount = 12;
+
+  renderRecCards();
+  setupWatchInfiniteScroll();
+}
+
+function renderRecCards() {
+  if (!recommendedGrid || !allRecommendations.length) return;
+  recommendedGrid.innerHTML = '';
+
+  const visible = allRecommendations.slice(0, recDisplayCount);
+  const recCountBadge = document.getElementById('recCountBadge');
+  if (recCountBadge) {
+    recCountBadge.textContent = `${allRecommendations.length.toLocaleString()} Recommended Videos`;
   }
 
-  // Display top 12 recommendations
-  recs.slice(0, 12).forEach(rec => {
+  visible.forEach(rec => {
     const card = document.createElement('article');
     card.className = 'video-card';
+    card.style.cursor = 'pointer';
     card.innerHTML = `
       <div class="thumb-container">
-        <img src="${rec.thumbnail_url}" alt="${escapeHtml(rec.title)}" loading="lazy" onerror="this.src='https://images.unsplash.com/photo-1536440136628-849c177e76a1?w=500&q=80'">
-        <span class="badge-duration">${rec.duration}</span>
+        <img src="${rec.thumbnail_url || rec.poster_url}" alt="${escapeHtml(rec.title)}" loading="lazy" onerror="this.src='https://images.unsplash.com/photo-1536440136628-849c177e76a1?w=500&q=80'">
+        <span class="badge-duration">${rec.duration || '10:00'}</span>
         <div class="play-overlay">
           <div class="play-icon-btn">
             <i class="fa-solid fa-play"></i>
@@ -639,6 +659,29 @@ function renderRecommendations(video) {
 
     recommendedGrid.appendChild(card);
   });
+
+  const sentinel = document.getElementById('recSentinel');
+  if (sentinel) {
+    sentinel.style.display = recDisplayCount >= allRecommendations.length ? 'none' : 'flex';
+  }
+}
+
+function setupWatchInfiniteScroll() {
+  const sentinel = document.getElementById('recSentinel');
+  if (!sentinel) return;
+
+  if (recObserver) recObserver.disconnect();
+
+  recObserver = new IntersectionObserver((entries) => {
+    if (entries[0].isIntersecting && !isRecLoading && recDisplayCount < allRecommendations.length) {
+      isRecLoading = true;
+      recDisplayCount += 12;
+      renderRecCards();
+      setTimeout(() => { isRecLoading = false; }, 300);
+    }
+  }, { rootMargin: '300px' });
+
+  recObserver.observe(sentinel);
 }
 
 function formatViews(num) {
