@@ -934,24 +934,36 @@ function playCustomVastPreRoll(video, onAdFinished) {
       adLayer.style.display = "block";
       skipBtn.style.display = "block";
       adVideo.setAttribute('referrerpolicy', 'no-referrer');
+      adVideo.setAttribute('playsinline', '');
+      adVideo.setAttribute('webkit-playsinline', '');
+      adVideo.playsInline = true;
+      adVideo.muted = true; // Muted by default so mobile browsers allow instant VAST ad playback!
       adVideo.src = adMediaUrl;
 
       if (trackingEvents.clickThrough) {
         adVideo.style.cursor = 'pointer';
-        adVideo.onclick = () => {
+        const handleAdClick = (e) => {
+          if (e) e.stopPropagation();
           window.open(trackingEvents.clickThrough, '_blank');
         };
+        adVideo.onclick = handleAdClick;
+        adVideo.ontouchstart = handleAdClick;
       }
 
-      adVideo.play().then(() => {
-        if (playerLoader) playerLoader.classList.add('hidden');
-      }).catch(err => {
-        console.warn('Ad autoplay restricted, attempting muted play:', err);
-        adVideo.muted = true;
-        adVideo.play().catch(() => {
-          endAdPlayback(onAdFinished);
-        });
-      });
+      const startAdPlay = () => {
+        const p = adVideo.play();
+        if (p !== undefined) {
+          p.then(() => {
+            if (playerLoader) playerLoader.classList.add('hidden');
+          }).catch(err => {
+            console.warn('Mobile VAST ad playback interaction required:', err.message);
+            // If mobile browser restricts video autoplay even when muted, enable tap-to-start or end ad
+            if (playerLoader) playerLoader.classList.add('hidden');
+          });
+        }
+      };
+
+      startAdPlay();
 
       // Fire Initial Impression Beacons
       trackingEvents.impressions.forEach(firePixel);
@@ -972,7 +984,10 @@ function playCustomVastPreRoll(video, onAdFinished) {
           skipBtn.classList.add('active');
 
           const handleSkip = (e) => {
-            if (e) e.stopPropagation();
+            if (e) {
+              e.preventDefault();
+              e.stopPropagation();
+            }
             endAdPlayback(onAdFinished);
           };
           skipBtn.onclick = handleSkip;
