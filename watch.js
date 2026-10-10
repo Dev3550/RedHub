@@ -99,9 +99,28 @@ async function initWatchPage() {
   // Setup Resolution Quality Dropdown Listener
   setupQualityControls();
 
-  // Initialize Native HLS / Video Stream with VAST 4.3 Pre-Roll Player Engine
+  // 1. Immediately start pre-loading main video stream in the background (shouldPlay: false)
+  loadSmartVideoStream(currentVideo, { shouldPlay: false });
+
+  // 2. Play VAST 4.3 Pre-Roll Video Ad Overlay on top
   playCustomVastPreRoll(currentVideo, () => {
-    loadSmartVideoStream(currentVideo);
+    // When VAST ad completes or Skip Ad is clicked, play main video instantly!
+    if (hlsVideoPlayer) {
+      const playPromise = hlsVideoPlayer.play();
+      if (playPromise !== undefined) {
+        playPromise.then(() => {
+          if (playerLoader) playerLoader.classList.add('hidden');
+        }).catch(err => {
+          console.warn('Unmuted playback restricted, attempting muted play:', err.message);
+          hlsVideoPlayer.muted = true;
+          hlsVideoPlayer.play().then(() => {
+            if (playerLoader) playerLoader.classList.add('hidden');
+          }).catch(() => {
+            if (playerLoader) playerLoader.classList.add('hidden');
+          });
+        });
+      }
+    }
   });
 
   // Render Category Based Recommended Videos
@@ -283,7 +302,7 @@ let isRefreshingStream = false;
 /**
  * Load Smart Video Stream directly into HotTube Video Player with instant auto-refresh
  */
-async function loadSmartVideoStream(video) {
+async function loadSmartVideoStream(video, options = { shouldPlay: true }) {
   if (!video) return;
   if (playerLoader) playerLoader.classList.remove('hidden');
 
@@ -291,7 +310,7 @@ async function loadSmartVideoStream(video) {
   const cachedStream = sessionStorage.getItem('fresh_stream_' + video.id);
   if (cachedStream) {
     console.log('⚡ Using pre-fetched live stream URL for video:', video.id);
-    loadHlsStream(cachedStream, video);
+    loadHlsStream(cachedStream, video, options);
     return;
   }
 
@@ -303,18 +322,18 @@ async function loadSmartVideoStream(video) {
     const fresh = await fetchFreshStreamUrl(video.page_url);
     if (fresh) {
       sessionStorage.setItem('fresh_stream_' + video.id, fresh);
-      loadHlsStream(fresh, video);
+      loadHlsStream(fresh, video, options);
       return;
     }
   }
 
-  loadHlsStream(streamUrl, video);
+  loadHlsStream(streamUrl, video, options);
 }
 
 /**
  * Load HLS Stream via HLS.js or Native HTML5 Video Player
  */
-function loadHlsStream(streamUrl, video) {
+function loadHlsStream(streamUrl, video, options = { shouldPlay: true }) {
   if (playerLoader) playerLoader.classList.remove('hidden');
 
   if (hlsInstance) {
@@ -351,7 +370,7 @@ function loadHlsStream(streamUrl, video) {
       console.log('✅ Stream token successfully refreshed! Resuming video playback...');
       sessionStorage.setItem('fresh_stream_' + video.id, freshUrl);
       video.video_stream_url = freshUrl;
-      loadHlsStream(freshUrl, video);
+      loadHlsStream(freshUrl, video, { shouldPlay: true });
     } else {
       console.error('❌ Could not refresh stream URL live');
       if (playerLoader) playerLoader.classList.add('hidden');
@@ -359,7 +378,10 @@ function loadHlsStream(streamUrl, video) {
   };
 
   const startPlayback = () => {
-    if (!hlsVideoPlayer) return;
+    if (!hlsVideoPlayer || options.shouldPlay === false) {
+      hideLoader();
+      return;
+    }
 
     const playPromise = hlsVideoPlayer.play();
     if (playPromise !== undefined) {
@@ -406,10 +428,14 @@ function loadHlsStream(streamUrl, video) {
     };
   }
 
-  // Direct MP4 playback in Native HTML5 Video Player
-  if (streamUrl.includes('.mp4')) {
+  // Direct MP4 or Non-M3U8 Stream playback in Native HTML5 Video Player
+  if (streamUrl.includes('.mp4') || !streamUrl.includes('.m3u8')) {
     hlsVideoPlayer.src = streamUrl;
-    startPlayback();
+    if (options.shouldPlay !== false) {
+      startPlayback();
+    } else {
+      hideLoader();
+    }
     return;
   }
 
