@@ -381,14 +381,14 @@ function loadHlsStream(streamUrl, video, options = { shouldPlay: true }) {
       if (hlsVideoPlayer) hlsVideoPlayer.classList.add('hidden');
       if (embedVideoPlayer && video.page_url) {
         let embedUrl = video.page_url;
-        if (video.page_url.includes('xhaccess.com')) {
-          const videoIdMatch = video.page_url.match(/videos\/([^/]+)/);
-          const vid = videoIdMatch ? videoIdMatch[1] : video.id;
-          embedUrl = `https://xhaccess.com/embed/${vid}`;
-        } else if (video.page_url.includes('pornhat.com')) {
+        if (video.page_url.includes('pornhat.com')) {
           const pornhatIdMatch = video.page_url.match(/video\/([^/]+)/);
           const pid = pornhatIdMatch ? pornhatIdMatch[1] : video.id;
           embedUrl = `https://www.pornhat.com/embed/${pid}`;
+        } else {
+          const videoIdMatch = video.page_url.match(/videos\/([^/]+)/);
+          const vid = videoIdMatch ? videoIdMatch[1] : video.id;
+          embedUrl = `https://xhaccess.com/embed/${vid}`;
         }
         embedVideoPlayer.src = embedUrl;
         embedVideoPlayer.classList.remove('hidden');

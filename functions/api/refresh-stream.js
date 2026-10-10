@@ -49,9 +49,10 @@ export async function onRequest(context) {
 
     if (pageUrl.includes('pornhat.com')) {
       const matches = html.match(/(https?:\/\/[^"'\s]+\/get_file\/[^"'\s]*)/gi) || [];
-      const valid = matches.filter(u => !u.includes('trailer') && !u.includes('thumb'));
+      const valid = matches.filter(u => !u.includes('trailer') && !u.includes('thumb') && !u.includes('preview'));
       if (valid.length > 0) {
-        streamUrl = valid[0].replace(/\\/g, '').replace(/&amp;/g, '&');
+        const hd = valid.find(u => u.includes('720p.mp4') || u.includes('1080p.mp4')) || valid[0];
+        streamUrl = hd.replace(/\\/g, '').replace(/&amp;/g, '&');
       }
     } else if (pageUrl.includes('inxxx.com')) {
       const getFileMatch = html.match(/(https?:\/\/[^"'\s]+\/get_file\/[^\s"']+)/i);
@@ -59,13 +60,17 @@ export async function onRequest(context) {
         streamUrl = getFileMatch[1].replace(/&amp;/g, '&');
       }
     } else {
-      const initialsMatch = html.match(/window\.initials\s*=\s*(\{.*?\});\s*<\/script>/s);
+      const initialsMatch = html.match(/window\.initials\s*=\s*(\{[\s\S]*?\});\s*<\/script>/s);
       if (initialsMatch && initialsMatch[1]) {
         try {
           const parsed = JSON.parse(initialsMatch[1]);
-          const sources = parsed?.videoModel?.sources || parsed?.video?.sources;
-          if (sources?.hls) streamUrl = sources.hls;
-          else if (sources?.mp4) {
+          const sources = parsed?.videoModel?.sources || parsed?.video?.sources || parsed?.xplayerSettings?.sources;
+          if (typeof sources?.hls === 'string') {
+            streamUrl = sources.hls;
+          } else if (typeof sources?.hls === 'object' && sources.hls !== null) {
+            const vals = Object.values(sources.hls);
+            if (vals.length) streamUrl = vals[vals.length - 1];
+          } else if (sources?.mp4) {
             const keys = Object.keys(sources.mp4);
             if (keys.length) streamUrl = sources.mp4[keys[keys.length - 1]];
           }
