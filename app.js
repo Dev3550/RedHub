@@ -268,8 +268,12 @@ function renderCurrentPage() {
     videoGrid.innerHTML = '';
     visibleVideos.forEach((video, idx) => {
       // Create Organic Video Card
-      const card = document.createElement('article');
+      const card = document.createElement('a');
       card.className = 'video-card';
+      card.href = `./watch.html?id=${encodeURIComponent(video.id)}`;
+      card.style.textDecoration = 'none';
+      card.style.color = 'inherit';
+      card.style.display = 'block';
       card.innerHTML = `
         <div class="thumb-container">
           <img src="${video.thumbnail_url || video.poster_url}" alt="${escapeHtml(video.title)}" loading="lazy" onerror="this.src='https://images.unsplash.com/photo-1536440136628-849c177e76a1?w=500&q=80'">
@@ -290,18 +294,20 @@ function renderCurrentPage() {
       `;
 
       card.onmouseenter = () => prefetchStream(video);
-      card.onclick = () => {
-        prefetchStream(video);
-        window.location.href = `watch.html?id=${encodeURIComponent(video.id)}`;
-      };
+      card.onclick = () => prefetchStream(video);
 
       videoGrid.appendChild(card);
 
       // Insert Native In-Feed Ad Card after every 8th video card
       if ((idx + 1) % 8 === 0) {
         const adData = NATIVE_INFEED_ADS[(Math.floor(idx / 8)) % NATIVE_INFEED_ADS.length];
-        const adCard = document.createElement('article');
+        const adCard = document.createElement('a');
         adCard.className = 'video-card native-infeed-ad-card';
+        adCard.href = 'https://s.magsrv.com/v1/vast.php?idz=6051416';
+        adCard.target = '_blank';
+        adCard.style.textDecoration = 'none';
+        adCard.style.color = 'inherit';
+        adCard.style.display = 'block';
         adCard.innerHTML = `
           <div class="thumb-container">
             <img src="${adData.thumbnail}" alt="${escapeHtml(adData.title)}" loading="lazy">
@@ -320,10 +326,6 @@ function renderCurrentPage() {
             </div>
           </div>
         `;
-
-        adCard.onclick = () => {
-          window.open('https://s.magsrv.com/v1/vast.php?idz=6051416', '_blank');
-        };
 
         videoGrid.appendChild(adCard);
       }
@@ -368,8 +370,11 @@ function renderTrendingCarousel() {
   if (trendingDots) trendingDots.innerHTML = '';
 
   trendingVideos.forEach((video, idx) => {
-    const card = document.createElement('div');
+    const card = document.createElement('a');
     card.className = 'trending-card';
+    card.href = `./watch.html?id=${encodeURIComponent(video.id)}`;
+    card.style.textDecoration = 'none';
+    card.style.color = 'inherit';
     card.innerHTML = `
       <div class="thumb-box">
         <img src="${video.thumbnail_url || video.poster_url}" alt="${escapeHtml(video.title)}" loading="lazy" onerror="this.src='https://images.unsplash.com/photo-1536440136628-849c177e76a1?w=500&q=80'">
@@ -391,11 +396,7 @@ function renderTrendingCarousel() {
     `;
 
     card.onmouseenter = () => prefetchStream(video);
-
-    card.onclick = () => {
-      prefetchStream(video);
-      window.location.href = `watch.html?id=${encodeURIComponent(video.id)}`;
-    };
+    card.onclick = () => prefetchStream(video);
 
     trendingCarouselTrack.appendChild(card);
 
