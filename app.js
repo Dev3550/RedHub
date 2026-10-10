@@ -257,7 +257,7 @@ function renderCurrentPage(isAppend = false) {
       card.style.display = 'block';
       card.innerHTML = `
         <div class="thumb-container">
-          <img src="${video.thumbnail_url || video.poster_url}" alt="${escapeHtml(video.title)}" loading="lazy" onerror="this.src='https://images.unsplash.com/photo-1536440136628-849c177e76a1?w=500&q=80'">
+          <img src="${video.thumbnail_url || video.poster_url}" alt="${escapeHtml(video.title)}" loading="lazy" referrerpolicy="no-referrer" onerror="this.src='https://images.unsplash.com/photo-1536440136628-849c177e76a1?w=500&q=80'">
           <span class="badge-duration">${video.duration || '10:00'}</span>
           <div class="play-overlay">
             <div class="play-icon-btn">
@@ -520,25 +520,29 @@ function renderVisualCategoriesModal() {
 }
 
 function selectCategoryByName(catName) {
-  const catLower = catName.toLowerCase();
+  if (!catName) return;
+  const catLower = String(catName).toLowerCase().trim();
 
   // Set active chip in bar
   document.querySelectorAll('.chip').forEach(c => {
-    if (c.getAttribute('data-category').toLowerCase() === catLower) {
+    const dataCat = c.getAttribute('data-category');
+    if (dataCat && dataCat.toLowerCase().trim() === catLower) {
       c.classList.add('active');
     } else {
       c.classList.remove('active');
     }
   });
 
-  if (catName === 'all') {
+  if (catLower === 'all') {
     filteredVideos = [...videosData];
-  } else if (catName === 'trending') {
+  } else if (catLower === 'trending') {
     filteredVideos = [...videosData].sort((a, b) => (b.views || 0) - (a.views || 0));
   } else {
     filteredVideos = videosData.filter(v => {
-      if (v.category && v.category.toLowerCase() === catLower) return true;
-      if (Array.isArray(v.categories) && v.categories.some(c => c.toLowerCase() === catLower)) return true;
+      if (!v) return false;
+      const vCat = String(v.category || '').toLowerCase();
+      if (vCat === catLower) return true;
+      if (Array.isArray(v.categories) && v.categories.some(c => String(c).toLowerCase() === catLower)) return true;
       if (v.title) {
         const titleLower = v.title.toLowerCase();
         if (catLower === 'mom' && (titleLower.includes('mom') || titleLower.includes('bhabhi') || titleLower.includes('stepmom'))) return true;
@@ -549,6 +553,7 @@ function selectCategoryByName(catName) {
   }
 
   displayCount = 24;
+  renderedVideoCount = 0;
   renderCurrentPage();
   if (catalogHeader) {
     catalogHeader.scrollIntoView({ behavior: 'smooth', block: 'start' });

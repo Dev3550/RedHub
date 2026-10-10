@@ -830,7 +830,7 @@ function renderRecCards(isAppend = false) {
     card.style.cursor = 'pointer';
     card.innerHTML = `
       <div class="thumb-container">
-        <img src="${rec.thumbnail_url || rec.poster_url}" alt="${escapeHtml(rec.title)}" loading="lazy" onerror="this.src='https://images.unsplash.com/photo-1536440136628-849c177e76a1?w=500&q=80'">
+        <img src="${rec.thumbnail_url || rec.poster_url}" alt="${escapeHtml(rec.title)}" loading="lazy" referrerpolicy="no-referrer" onerror="this.src='https://images.unsplash.com/photo-1536440136628-849c177e76a1?w=500&q=80'">
         <span class="badge-duration">${rec.duration || '10:00'}</span>
         <div class="play-overlay">
           <div class="play-icon-btn">
