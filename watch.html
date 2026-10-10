@@ -115,6 +115,12 @@
       <div class="watch-player-wrapper" style="position: relative;">
         <video id="hlsVideoPlayer" controls playsinline preload="auto" poster="" referrerpolicy="no-referrer"></video>
 
+        <!-- Pre-roll VAST Ad Video & Controls (Dedicated VAST Ad Layer) -->
+        <div id="adLayer">
+          <video id="adVideo" playsinline muted referrerpolicy="no-referrer"></video>
+          <div id="skipBtn">Skip in 6s</div>
+        </div>
+
         <!-- Pause Overlay Banner (Zone 6049564) -->
         <div id="pauseBannerLayer">
           <div id="pauseCloseBtn" onclick="closePauseAd()">&times;</div>
