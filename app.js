@@ -678,14 +678,18 @@ function setupEventListeners() {
     });
   }
 
-  // Category chip filtering
-  document.querySelectorAll('.chip').forEach(chip => {
-    chip.addEventListener('click', (e) => {
-      const targetChip = e.target.closest('.chip');
-      if (!targetChip) return;
-      const cat = targetChip.getAttribute('data-category');
-      selectCategoryByName(cat);
-    });
+  // Global Delegated Click Handler for Category Chips & Cards
+  document.addEventListener('click', (e) => {
+    const chipBtn = e.target.closest('.chip, .visual-category-card');
+    if (chipBtn) {
+      const cat = chipBtn.getAttribute('data-category');
+      if (cat) {
+        e.preventDefault();
+        e.stopPropagation();
+        selectCategoryByName(cat);
+        if (typeof closeCategoriesModal === 'function') closeCategoriesModal();
+      }
+    }
   });
 }
 
