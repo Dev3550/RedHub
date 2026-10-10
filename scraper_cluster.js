@@ -53,11 +53,11 @@ for (const cat of PORN_BASE_CATEGORIES) {
   }
 }
 
-// Generate multi-page xHAccess URLs (Pages 1 to 5)
+// Generate multi-page xHamster19 URLs (Pages 1 to 5)
 for (const catName of XH_BASE_CATEGORIES) {
   const slug = catName.toLowerCase().replace(/ /g, '-');
   for (let p = 1; p <= 5; p++) {
-    const pageUrl = p === 1 ? `https://xhaccess.com/search/${slug}` : `https://xhaccess.com/search/${slug}?page=${p}`;
+    const pageUrl = p === 1 ? `https://xhamster19.com/categories/${slug}` : `https://xhamster19.com/categories/${slug}/${p}`;
     TARGET_CATEGORIES.push({ name: catName, source: 'xh', url: pageUrl });
   }
 }
@@ -79,7 +79,7 @@ function saveProgress() {
 
   for (const v of catalog) {
     const pageUrl = v.page_url || '';
-    const validDomain = pageUrl.includes('xhaccess.com') || pageUrl.includes('pornhat.com');
+    const validDomain = pageUrl.includes('xhamster19.com') || pageUrl.includes('xhamster.com') || pageUrl.includes('pornhat.com');
     if (!validDomain || !v.video_stream_url || !v.id) continue;
     if (seenIds.has(v.id) || seenUrls.has(pageUrl)) continue;
 

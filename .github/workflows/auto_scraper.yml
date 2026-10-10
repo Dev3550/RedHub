@@ -2,8 +2,8 @@ name: ExoticHub Auto Scraper Cron
 
 on:
   schedule:
-    # Run every 4 minutes automatically to refresh old stream tokens & add latest videos
-    - cron: '*/4 * * * *'
+    # Run every 30 minutes automatically to scrape new videos from xhamster19 & refresh stream tokens
+    - cron: '*/30 * * * *'
   push:
     # Trigger cloud scraping on every push to main
     branches:
