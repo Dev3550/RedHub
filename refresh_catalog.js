@@ -3,11 +3,11 @@ const path = require('path');
 const { fetchHtml, extractStreamDetails } = require('./utils');
 
 const CATALOG_FILE = path.join(__dirname, 'sample_videos.json');
-const CONCURRENCY = 70; // 70 High-Speed Parallel Async Scraper Workers
+const CONCURRENCY = 140; // 140 High-Speed Parallel Async Scraper Workers
 
 async function refreshAllExpiredTokens() {
   console.log('==================================================================');
-  console.log('  🚀 ExoticHub Fast Parallel Stream Token & Catalog Refresher');
+  console.log('  🚀 ExoticHub 140-Worker Parallel Stream Token & Catalog Refresher');
   console.log('==================================================================');
 
   if (!fs.existsSync(CATALOG_FILE)) {
@@ -82,7 +82,7 @@ async function refreshAllExpiredTokens() {
       }
 
       processedCount++;
-      if (processedCount % 100 === 0 || queue.length === 0) {
+      if (processedCount % 200 === 0 || queue.length === 0) {
         console.log(` ⏳ Audited [${processedCount}/${catalog.length}] items | Valid: ${validCount} | Refreshed: ${updatedCount}`);
       }
 
@@ -139,5 +139,18 @@ async function refreshAllExpiredTokens() {
   console.log('==================================================================\n');
 }
 
-refreshAllExpiredTokens();
+async function startLoopMode() {
+  const isLoop = process.argv.includes('--loop');
+  await refreshAllExpiredTokens();
+
+  if (isLoop) {
+    console.log('🔄 Loop mode active: Next 140-worker refresh scheduled in 4 minutes...');
+    setInterval(async () => {
+      console.log('\n⏰ Starting 4-minute scheduled token refresh cycle...');
+      await refreshAllExpiredTokens();
+    }, 4 * 60 * 1000);
+  }
+}
+
+startLoopMode();
 
