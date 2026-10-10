@@ -1640,111 +1640,45 @@ body {
   }
 }
 
-/* 1. Desktop & Tablet Horizontal Header Display Banner (Zone 6051430) [728x90 / 970x90] */
-.exoclick-display-banner-container {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  margin: 12px auto;
+/* Dynamic Responsive Ad Container System (Zero empty gap if ad fails to load) */
+.exoclick-display-banner-container,
+.exoclick-mobile-banner-container,
+.exoclick-rectangle-container,
+.exoclick-native-widget-container,
+.exoclick-outstream-container,
+.tablet-desktop-ad,
+.mobile-only-ad,
+.desktop-only-ad,
+.ad-container {
   width: 100%;
-  max-width: 970px;
-  max-height: 90px;
-  min-height: 0;
+  height: auto;
+  min-height: 0 !important;
+  margin: 0 auto;
+  padding: 0 !important;
   background: transparent !important;
   border: none !important;
-  padding: 0 !important;
+  box-shadow: none !important;
   box-sizing: border-box;
   overflow: hidden;
-  text-align: center;
+  transition: all 0.2s ease-in-out;
 }
 
-/* 2. In-Page Rectangle Ad Container (Zone 6051442 / 300x250) */
-.exoclick-mobile-banner-container, .exoclick-rectangle-container {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  margin: 12px auto;
-  width: 100%;
-  max-width: 300px;
-  max-height: 250px;
-  min-height: 0;
-  background: transparent !important;
-  border: none !important;
+/* Hide empty ad containers when no ad content is rendered (Zero empty gap) */
+.exoclick-display-banner-container:empty,
+.exoclick-mobile-banner-container:empty,
+.exoclick-rectangle-container:empty,
+.exoclick-native-widget-container:empty,
+.exoclick-outstream-container:empty,
+.tablet-desktop-ad:empty,
+.mobile-only-ad:empty,
+.desktop-only-ad:empty,
+.ad-container:empty,
+ins:empty {
+  display: none !important;
+  margin: 0 !important;
   padding: 0 !important;
-  box-sizing: border-box;
-  overflow: hidden;
-}
-
-/* 3. Mobile Sticky Footer Banner (Zone 6051442) [Thin 320x50 Strip] */
-.exoclick-mobile-sticky-footer {
-  display: none;
-}
-
-@media (max-width: 768px) {
-  .exoclick-mobile-sticky-footer {
-    display: flex !important;
-    position: fixed;
-    bottom: 0;
-    left: 0;
-    right: 0;
-    z-index: 99999;
-    height: 52px !important;
-    max-height: 52px !important;
-    align-items: center;
-    justify-content: center;
-    background: rgba(10, 10, 16, 0.96) !important;
-    backdrop-filter: blur(10px);
-    border-top: 1px solid rgba(255, 0, 127, 0.3) !important;
-    margin: 0 !important;
-    max-width: 100% !important;
-    padding: 0 !important;
-    box-shadow: 0 -4px 20px rgba(0, 0, 0, 0.8);
-    overflow: hidden;
-  }
-
-  .exoclick-mobile-sticky-footer ins,
-  .exoclick-mobile-sticky-footer iframe {
-    max-height: 50px !important;
-    max-width: 320px !important;
-  }
-
-  body {
-    padding-bottom: 56px !important;
-  }
-}
-
-/* 4. Native Recommendations Widget Container (Zone 6051416) */
-.exoclick-native-widget-container {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  justify-content: center;
-  margin: 14px auto;
-  width: 100%;
-  max-width: 1200px;
-  min-height: 0;
-  background: transparent !important;
-  border: none !important;
-  padding: 0 !important;
-  box-sizing: border-box;
-  overflow: hidden;
-}
-
-/* 5. Outstream Video Ad Container (Zone 6051428) */
-.exoclick-outstream-container {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  justify-content: center;
-  margin: 14px auto;
-  width: 100%;
-  max-width: 640px;
-  min-height: 0;
-  background: transparent !important;
-  border: none !important;
-  padding: 0 !important;
-  box-sizing: border-box;
-  overflow: hidden;
+  height: 0 !important;
+  min-height: 0 !important;
 }
 
 /* Ensure iframe & ins elements inside ad containers scale responsively without breaking layout */

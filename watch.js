@@ -100,29 +100,8 @@ async function initWatchPage() {
   // Setup Resolution Quality Dropdown Listener
   setupQualityControls();
 
-  // 1. Immediately start pre-loading main video stream in the background (shouldPlay: false)
-  loadSmartVideoStream(currentVideo, { shouldPlay: false });
-
-  // 2. Play VAST 4.3 Pre-Roll Video Ad Overlay on top
-  playCustomVastPreRoll(currentVideo, () => {
-    // When VAST ad completes or Skip Ad is clicked, play main video instantly!
-    if (hlsVideoPlayer) {
-      const playPromise = hlsVideoPlayer.play();
-      if (playPromise !== undefined) {
-        playPromise.then(() => {
-          if (playerLoader) playerLoader.classList.add('hidden');
-        }).catch(err => {
-          console.warn('Unmuted playback restricted, attempting muted play:', err.message);
-          hlsVideoPlayer.muted = true;
-          hlsVideoPlayer.play().then(() => {
-            if (playerLoader) playerLoader.classList.add('hidden');
-          }).catch(() => {
-            if (playerLoader) playerLoader.classList.add('hidden');
-          });
-        });
-      }
-    }
-  });
+  // Load and play main video stream directly
+  loadSmartVideoStream(currentVideo, { shouldPlay: true });
 
   // Render Category Based Recommended Videos
   renderRecommendations(currentVideo);
@@ -1088,10 +1067,12 @@ function endAdPlayback(onAdFinished) {
   }
 }
 
-// Video Pause Ad Integration (Zone 6049564)
+// Video Pause Ad Integration (ExoClick Zone 6052180)
+const PAUSE_ZONE_ID = '6052180';
+
 if (hlsVideoPlayer) {
   hlsVideoPlayer.addEventListener('pause', () => {
-    if (!hlsVideoPlayer.ended && adHasPlayed && hlsVideoPlayer.currentTime > 1) {
+    if (!hlsVideoPlayer.ended && hlsVideoPlayer.currentTime > 1) {
       showPauseAd();
     }
   });
