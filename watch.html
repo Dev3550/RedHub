@@ -112,10 +112,33 @@
       <div class="watch-player-wrapper" style="position: relative;">
         <video id="hlsVideoPlayer" controls playsinline preload="auto" poster="" referrerpolicy="no-referrer"></video>
 
+        <!-- In-Player Floating Overlay Controls Bar (Quality & CC Subtitles) -->
+        <div id="inPlayerOverlayBar" class="in-player-overlay-bar">
+          <div class="in-player-btn-group">
+            <div class="in-player-dropdown">
+              <button id="inPlayerQualityBtn" class="in-player-btn" title="Stream Resolution">
+                <i class="fa-solid fa-sliders"></i> <span id="inPlayerQualityLabel">Auto HD</span>
+              </button>
+              <div id="inPlayerQualityMenu" class="in-player-menu hidden">
+                <!-- Dynamically populated options -->
+              </div>
+            </div>
+
+            <div class="in-player-dropdown" id="inPlayerSubGroup">
+              <button id="inPlayerSubBtn" class="in-player-btn" title="Subtitles (CC)">
+                <i class="fa-solid fa-closed-captioning"></i> <span id="inPlayerSubLabel">CC Off</span>
+              </button>
+              <div id="inPlayerSubMenu" class="in-player-menu hidden">
+                <!-- Dynamically populated subtitle tracks -->
+              </div>
+            </div>
+          </div>
+        </div>
+
         <!-- Pre-roll VAST Ad Video & Controls (Dedicated VAST Ad Layer) -->
         <div id="adLayer">
           <video id="adVideo" playsinline muted referrerpolicy="no-referrer"></video>
-          <div id="skipBtn">Skip in 6s</div>
+          <div id="skipBtn">Skip in 5s</div>
         </div>
 
         <!-- Pause Overlay Banner (Zone 6049564) -->

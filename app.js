@@ -247,10 +247,16 @@ function prefetchStream(video) {
 /**
  * Render Video Grid with Infinite Scroll & In-Feed Native Ads
  */
-function renderCurrentPage() {
+let renderedVideoCount = 0;
+
+/**
+ * Render Video Grid with Infinite Scroll & In-Feed Native Ads
+ */
+function renderCurrentPage(isAppend = false) {
   if (filteredVideos.length === 0) {
     if (emptyState) emptyState.classList.remove('hidden');
     if (videoGrid) videoGrid.innerHTML = '';
+    renderedVideoCount = 0;
     const sentinel = document.getElementById('infiniteScrollSentinel');
     if (sentinel) sentinel.style.display = 'none';
     return;
@@ -262,15 +268,20 @@ function renderCurrentPage() {
     sentinel.style.display = displayCount >= filteredVideos.length ? 'none' : 'flex';
   }
 
-  const visibleVideos = filteredVideos.slice(0, displayCount);
+  if (!isAppend) {
+    if (videoGrid) videoGrid.innerHTML = '';
+    renderedVideoCount = 0;
+  }
 
-  if (videoGrid) {
-    videoGrid.innerHTML = '';
-    visibleVideos.forEach((video, idx) => {
+  const newVideosToRender = filteredVideos.slice(renderedVideoCount, displayCount);
+
+  if (videoGrid && newVideosToRender.length > 0) {
+    newVideosToRender.forEach((video, idx) => {
+      const overallIdx = renderedVideoCount + idx;
       // Create Organic Video Card
       const card = document.createElement('a');
       card.className = 'video-card';
-      card.href = `/watch.html?id=${encodeURIComponent(video.id)}`;
+      card.href = `watch.html?id=${encodeURIComponent(video.id)}`;
       card.style.textDecoration = 'none';
       card.style.color = 'inherit';
       card.style.display = 'block';
@@ -299,8 +310,8 @@ function renderCurrentPage() {
       videoGrid.appendChild(card);
 
       // Insert Native In-Feed Ad Card after every 8th video card
-      if ((idx + 1) % 8 === 0) {
-        const adData = NATIVE_INFEED_ADS[(Math.floor(idx / 8)) % NATIVE_INFEED_ADS.length];
+      if ((overallIdx + 1) % 8 === 0) {
+        const adData = NATIVE_INFEED_ADS[(Math.floor(overallIdx / 8)) % NATIVE_INFEED_ADS.length];
         const adCard = document.createElement('a');
         adCard.className = 'video-card native-infeed-ad-card';
         adCard.href = 'https://s.magsrv.com/v1/vast.php?idz=6051416';
@@ -330,6 +341,8 @@ function renderCurrentPage() {
         videoGrid.appendChild(adCard);
       }
     });
+
+    renderedVideoCount = Math.min(displayCount, filteredVideos.length);
   }
 
   setupInfiniteScroll();
@@ -350,12 +363,12 @@ function setupInfiniteScroll() {
     if (entries[0].isIntersecting && !isInfiniteLoading && displayCount < filteredVideos.length) {
       isInfiniteLoading = true;
       displayCount += 24;
-      renderCurrentPage();
+      renderCurrentPage(true);
       setTimeout(() => {
         isInfiniteLoading = false;
-      }, 300);
+      }, 250);
     }
-  }, { rootMargin: '300px' });
+  }, { rootMargin: '400px' });
 
   infiniteObserver.observe(sentinel);
 }

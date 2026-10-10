@@ -522,11 +522,33 @@ function loadHlsStream(streamUrl, video, options = { shouldPlay: true }) {
 /**
  * Dynamically Populate Quality Dropdown based on actual stream resolutions
  */
+/**
+ * Dynamically Populate Quality Dropdown & In-Player Control Overlay
+ */
 function populateQualityDropdown(levels) {
   const qualitySelect = document.getElementById('qualitySelect');
-  if (!qualitySelect || !levels || levels.length === 0) return;
+  const inPlayerQualityMenu = document.getElementById('inPlayerQualityMenu');
+  const inPlayerQualityBtn = document.getElementById('inPlayerQualityBtn');
+  const inPlayerQualityLabel = document.getElementById('inPlayerQualityLabel');
 
-  qualitySelect.innerHTML = '<option value="-1">⚡ Auto (Adaptive HD/SD)</option>';
+  if (!levels || levels.length === 0) return;
+
+  if (qualitySelect) {
+    qualitySelect.innerHTML = '<option value="-1">⚡ Auto (Adaptive HD/SD)</option>';
+  }
+  if (inPlayerQualityMenu) {
+    inPlayerQualityMenu.innerHTML = '';
+    const autoBtn = document.createElement('button');
+    autoBtn.className = 'in-player-menu-item active';
+    autoBtn.innerHTML = '⚡ Auto HD';
+    autoBtn.onclick = () => {
+      setHlsQuality(-1);
+      if (inPlayerQualityLabel) inPlayerQualityLabel.textContent = 'Auto HD';
+      inPlayerQualityMenu.classList.add('hidden');
+      updateActiveMenuItem(inPlayerQualityMenu, autoBtn);
+    };
+    inPlayerQualityMenu.appendChild(autoBtn);
+  }
 
   // Sort levels descending by resolution height
   const levelItems = levels.map((lvl, index) => ({
@@ -549,11 +571,41 @@ function populateQualityDropdown(levels) {
 
     let tag = lvl.height >= 720 ? 'HD' : (lvl.height >= 480 ? 'SD' : 'Saver');
 
-    const opt = document.createElement('option');
-    opt.value = lvl.index;
-    opt.textContent = `${icon} ${lvl.height}p ${tag}`;
-    qualitySelect.appendChild(opt);
+    if (qualitySelect) {
+      const opt = document.createElement('option');
+      opt.value = lvl.index;
+      opt.textContent = `${icon} ${lvl.height}p ${tag}`;
+      qualitySelect.appendChild(opt);
+    }
+
+    if (inPlayerQualityMenu) {
+      const itemBtn = document.createElement('button');
+      itemBtn.className = 'in-player-menu-item';
+      itemBtn.innerHTML = `${icon} ${lvl.height}p ${tag}`;
+      itemBtn.onclick = () => {
+        setHlsQuality(lvl.index);
+        if (inPlayerQualityLabel) inPlayerQualityLabel.textContent = `${lvl.height}p`;
+        inPlayerQualityMenu.classList.add('hidden');
+        updateActiveMenuItem(inPlayerQualityMenu, itemBtn);
+      };
+      inPlayerQualityMenu.appendChild(itemBtn);
+    }
   });
+
+  if (inPlayerQualityBtn && inPlayerQualityMenu) {
+    inPlayerQualityBtn.onclick = (e) => {
+      e.stopPropagation();
+      const inPlayerSubMenu = document.getElementById('inPlayerSubMenu');
+      if (inPlayerSubMenu) inPlayerSubMenu.classList.add('hidden');
+      inPlayerQualityMenu.classList.toggle('hidden');
+    };
+  }
+}
+
+function updateActiveMenuItem(menuContainer, activeBtn) {
+  if (!menuContainer) return;
+  menuContainer.querySelectorAll('.in-player-menu-item').forEach(btn => btn.classList.remove('active'));
+  if (activeBtn) activeBtn.classList.add('active');
 }
 
 /**
@@ -561,11 +613,19 @@ function populateQualityDropdown(levels) {
  */
 function setupQualityControls() {
   const qualitySelect = document.getElementById('qualitySelect');
-  if (!qualitySelect) return;
+  if (qualitySelect) {
+    qualitySelect.addEventListener('change', (e) => {
+      const selectedLevel = parseInt(e.target.value, 10);
+      setHlsQuality(selectedLevel);
+    });
+  }
 
-  qualitySelect.addEventListener('change', (e) => {
-    const selectedLevel = parseInt(e.target.value, 10);
-    setHlsQuality(selectedLevel);
+  // Close in-player floating menus on click outside
+  document.addEventListener('click', () => {
+    const inPlayerQualityMenu = document.getElementById('inPlayerQualityMenu');
+    const inPlayerSubMenu = document.getElementById('inPlayerSubMenu');
+    if (inPlayerQualityMenu) inPlayerQualityMenu.classList.add('hidden');
+    if (inPlayerSubMenu) inPlayerSubMenu.classList.add('hidden');
   });
 }
 
@@ -596,36 +656,84 @@ function setHlsQuality(selectedLevel) {
 }
 
 /**
- * Dynamically Populate Subtitle Tracks Dropdown
+ * Dynamically Populate Subtitle Tracks Dropdown & In-Player CC Menu
  */
 function populateSubtitleDropdown(tracks) {
   const subtitleSelect = document.getElementById('subtitleSelect');
   const subtitleWrapper = document.getElementById('subtitleWrapper');
-  if (!subtitleSelect) return;
+  const inPlayerSubMenu = document.getElementById('inPlayerSubMenu');
+  const inPlayerSubGroup = document.getElementById('inPlayerSubGroup');
+  const inPlayerSubBtn = document.getElementById('inPlayerSubBtn');
+  const inPlayerSubLabel = document.getElementById('inPlayerSubLabel');
 
   if (!tracks || tracks.length === 0) {
     if (subtitleWrapper) subtitleWrapper.style.display = 'none';
+    if (inPlayerSubGroup) inPlayerSubGroup.style.display = 'none';
     return;
   }
 
   if (subtitleWrapper) subtitleWrapper.style.display = 'flex';
-  subtitleSelect.innerHTML = '<option value="-1">💬 Subtitles Off</option>';
+  if (inPlayerSubGroup) inPlayerSubGroup.style.display = 'block';
+
+  if (subtitleSelect) {
+    subtitleSelect.innerHTML = '<option value="-1">💬 Subtitles Off</option>';
+  }
+  if (inPlayerSubMenu) {
+    inPlayerSubMenu.innerHTML = '';
+    const offBtn = document.createElement('button');
+    offBtn.className = 'in-player-menu-item active';
+    offBtn.innerHTML = '🚫 Subtitles Off';
+    offBtn.onclick = () => {
+      if (hlsInstance) hlsInstance.subtitleTrack = -1;
+      if (inPlayerSubLabel) inPlayerSubLabel.textContent = 'CC Off';
+      inPlayerSubMenu.classList.add('hidden');
+      updateActiveMenuItem(inPlayerSubMenu, offBtn);
+    };
+    inPlayerSubMenu.appendChild(offBtn);
+  }
 
   tracks.forEach((track, index) => {
-    const opt = document.createElement('option');
-    opt.value = index;
     const label = track.name || track.lang || track.label || `Track ${index + 1}`;
-    opt.textContent = `💬 ${label.toUpperCase()}`;
-    subtitleSelect.appendChild(opt);
+
+    if (subtitleSelect) {
+      const opt = document.createElement('option');
+      opt.value = index;
+      opt.textContent = `💬 ${label.toUpperCase()}`;
+      subtitleSelect.appendChild(opt);
+    }
+
+    if (inPlayerSubMenu) {
+      const itemBtn = document.createElement('button');
+      itemBtn.className = 'in-player-menu-item';
+      itemBtn.innerHTML = `💬 ${label.toUpperCase()}`;
+      itemBtn.onclick = () => {
+        if (hlsInstance) hlsInstance.subtitleTrack = index;
+        if (inPlayerSubLabel) inPlayerSubLabel.textContent = label.toUpperCase();
+        inPlayerSubMenu.classList.add('hidden');
+        updateActiveMenuItem(inPlayerSubMenu, itemBtn);
+      };
+      inPlayerSubMenu.appendChild(itemBtn);
+    }
   });
 
-  subtitleSelect.onchange = (e) => {
-    const targetIdx = parseInt(e.target.value);
-    if (hlsInstance) {
-      hlsInstance.subtitleTrack = targetIdx;
-      console.log('💬 Subtitle track switched live to index:', targetIdx);
-    }
-  };
+  if (subtitleSelect) {
+    subtitleSelect.onchange = (e) => {
+      const targetIdx = parseInt(e.target.value);
+      if (hlsInstance) {
+        hlsInstance.subtitleTrack = targetIdx;
+        console.log('💬 Subtitle track switched live to index:', targetIdx);
+      }
+    };
+  }
+
+  if (inPlayerSubBtn && inPlayerSubMenu) {
+    inPlayerSubBtn.onclick = (e) => {
+      e.stopPropagation();
+      const inPlayerQualityMenu = document.getElementById('inPlayerQualityMenu');
+      if (inPlayerQualityMenu) inPlayerQualityMenu.classList.add('hidden');
+      inPlayerSubMenu.classList.toggle('hidden');
+    };
+  }
 }
 
 let recDisplayCount = 12;
