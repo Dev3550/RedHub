@@ -11,6 +11,9 @@ const CHECKPOINT_FILE = path.resolve(__dirname, 'checkpoint_urls.json');
 
 // Dynamic Multi-Page Target Generation across pornhat and xhaccess
 const PORN_BASE_CATEGORIES = [
+  { name: 'Step Family', path: 'search/step+sister' },
+  { name: 'Step Family', path: 'search/step+brother' },
+  { name: 'Step Family', path: 'search/step+mom' },
   { name: 'Brazzers', path: 'sites/brazzers' },
   { name: 'Indian', path: 'search/indian' },
   { name: 'Desi', path: 'search/desi' },
@@ -37,6 +40,7 @@ const PORN_BASE_CATEGORIES = [
 ];
 
 const XH_BASE_CATEGORIES = [
+  'Step Family', 'Step Sister', 'Step Brother', 'Step Mom', 'Taboo',
   'Indian', 'Desi', 'Mom', 'Anal', 'Latina', 'Interracial', 'Amateur', 'Blowjob',
   'Big Tits', 'Asian', 'Mature', 'Creampie', 'POV', 'Group', 'Hardcore', 'Teen',
   'MILF', 'Threesome', 'Solo', 'Lesbian', 'Blonde', 'Brunette', 'Japanese',
@@ -45,21 +49,27 @@ const XH_BASE_CATEGORIES = [
 
 const TARGET_CATEGORIES = [];
 
-// Generate multi-page Pornhat URLs (Pages 1 to 10)
+// Generate multi-page Pornhat URLs (Pages 1 to 15)
 for (const cat of PORN_BASE_CATEGORIES) {
-  for (let p = 1; p <= 10; p++) {
+  for (let p = 1; p <= 15; p++) {
     const pagePath = p === 1 ? `https://www.pornhat.com/${cat.path}/` : `https://www.pornhat.com/${cat.path}/${p}/`;
     TARGET_CATEGORIES.push({ name: cat.name, source: 'pornhat', url: pagePath });
   }
 }
 
-// Generate multi-page xHamster19 URLs (Pages 1 to 5)
+// Generate multi-page xHamster19 Category URLs (Pages 1 to 20)
 for (const catName of XH_BASE_CATEGORIES) {
   const slug = catName.toLowerCase().replace(/ /g, '-');
-  for (let p = 1; p <= 5; p++) {
+  for (let p = 1; p <= 20; p++) {
     const pageUrl = p === 1 ? `https://xhamster19.com/categories/${slug}` : `https://xhamster19.com/categories/${slug}/${p}`;
-    TARGET_CATEGORIES.push({ name: catName, source: 'xh', url: pageUrl });
+    TARGET_CATEGORIES.push({ name: catName === 'Taboo' || catName.includes('Step') ? 'Step Family' : catName, source: 'xh', url: pageUrl });
   }
+}
+
+// Deep Multi-Page Scanner for xHamster19 Newest Video Feed (Pages 1 to 50 dynamically)
+for (let p = 1; p <= 50; p++) {
+  const newestUrl = p === 1 ? 'https://xhamster19.com/newest' : `https://xhamster19.com/newest/${p}`;
+  TARGET_CATEGORIES.push({ name: 'Trending', source: 'xh', url: newestUrl });
 }
 
 let catalog = [];
@@ -154,11 +164,19 @@ async function worker(id, queue) {
         .replace(/(xHamster|xHamsters|xNXX|Pornhub|XVideos|FreePornVideo|SexVid|HotTube|inxxx|xxx|video)/gi, 'ExoticHub')
         .trim();
 
+      // Auto-categorize Step Family / Taboo videos
+      const titleLower = cleanTitle.toLowerCase();
+      const urlLower = item.page_url.toLowerCase();
+      let finalCategory = item.category || 'Trending';
+      if (titleLower.includes('step') || titleLower.includes('sister') || titleLower.includes('brother') || titleLower.includes('taboo') || titleLower.includes('family') || urlLower.includes('step') || urlLower.includes('taboo')) {
+        finalCategory = 'Step Family';
+      }
+
       const cleanItem = {
         index: 1,
         id: item.id || `vid_${Date.now()}_${Math.random().toString(36).substring(2, 6)}`,
         title: cleanTitle || 'ExoticHub Trending Video',
-        category: item.category || 'Trending',
+        category: finalCategory,
         duration: item.duration || item.duration_formatted || '10:00',
         thumbnail_url: item.thumbnail_url || posterUrl,
         poster_url: posterUrl || item.thumbnail_url,
