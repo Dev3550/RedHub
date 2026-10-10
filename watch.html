@@ -66,7 +66,7 @@
   <!-- HLS.js Library -->
   <script src="https://cdn.jsdelivr.net/npm/hls.js@latest"></script>
   <!-- Stylesheet -->
-  <link rel="stylesheet" href="/style.css?v=20261010_v55">
+  <link rel="stylesheet" href="/style.css?v=20261010_v60">
 </head>
 <body>
 
@@ -133,6 +133,12 @@
               </div>
             </div>
           </div>
+        </div>
+
+        <!-- Pre-roll VAST Ad Video & Controls (Dedicated VAST Ad Layer) -->
+        <div id="adLayer">
+          <video id="adVideo" playsinline muted referrerpolicy="no-referrer"></video>
+          <div id="skipBtn">Skip in 5s</div>
         </div>
 
         <!-- Pause Overlay Banner (ExoClick Zone 6052180) -->
@@ -285,6 +291,6 @@
     <script>(AdProvider = window.AdProvider || []).push({"serve": {}});</script>
   </div>
 
-  <script src="/watch.js?v=20261010_v55"></script>
+  <script src="/watch.js?v=20261010_v60"></script>
 </body>
 </html>

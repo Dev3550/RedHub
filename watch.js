@@ -100,8 +100,10 @@ async function initWatchPage() {
   // Setup Resolution Quality Dropdown Listener
   setupQualityControls();
 
-  // Load and play main video stream directly
-  loadSmartVideoStream(currentVideo, { shouldPlay: true });
+  // Play Pre-roll VAST Ad first before main video stream starts!
+  playCustomVastPreRoll(currentVideo, () => {
+    loadSmartVideoStream(currentVideo, { shouldPlay: true });
+  });
 
   // Render Category Based Recommended Videos
   renderRecommendations(currentVideo);
@@ -891,6 +893,7 @@ function escapeHtml(str) {
 // ExoClick VAST 4.3 Pre-Roll & Pause Ad Player Engine
 // ==========================================================================
 const VAST_URLS = [
+  "https://s.magsrv.com/v1/vast.php?idz=6052180",
   "https://s.magsrv.com/v1/vast.php?idz=6051450",
   "https://s.magsrv.com/v1/vast.php?idz=6050694",
   "https://s.magsrv.com/v1/vast.php?idz=6051448"
@@ -1085,8 +1088,11 @@ if (hlsVideoPlayer) {
 function showPauseAd() {
   const pauseBannerLayer = document.getElementById('pauseBannerLayer');
   const pauseAdSlot = document.getElementById('pauseAdSlot');
-  if (pauseBannerLayer) pauseBannerLayer.style.display = "block";
-  if (pauseAdSlot && !pauseAdSlot.hasChildNodes()) {
+  if (!pauseBannerLayer || !pauseAdSlot) return;
+
+  pauseBannerLayer.style.display = "block";
+
+  if (!pauseAdSlot.querySelector('ins')) {
     pauseAdSlot.innerHTML = `
       <ins class="eas6a97888e38" data-zoneid="${PAUSE_ZONE_ID}"></ins>
     `;
@@ -1094,10 +1100,12 @@ function showPauseAd() {
     script.src = "https://a.magsrv.com/ad-provider.js";
     script.async = true;
     script.onload = () => {
-      (window.AdProvider = window.AdProvider || []).push({"serve": {}});
+      try { (window.AdProvider = window.AdProvider || []).push({"serve": {}}); } catch (_) {}
     };
     pauseAdSlot.appendChild(script);
   }
+
+  try { (window.AdProvider = window.AdProvider || []).push({"serve": {}}); } catch (_) {}
 }
 
 function closePauseAd() {
