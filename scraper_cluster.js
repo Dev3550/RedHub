@@ -143,8 +143,8 @@ async function worker(id, queue) {
         mainStreamUrl = details.stream_url;
       }
 
-      if (!mainStreamUrl) {
-        console.log(`[Worker ${id}] ⚠️ No valid stream URL found for ${item.page_url}`);
+      if (!mainStreamUrl || mainStreamUrl.includes('.t.mp4') || mainStreamUrl.includes('.t.av1.mp4') || mainStreamUrl.includes('/526x298.') || mainStreamUrl.includes('trailer')) {
+        console.log(`[Worker ${id}] ⚠️ Skipping trailer preview link for ${item.page_url}`);
         scrapedUrls.add(item.page_url);
         continue;
       }
