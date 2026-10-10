@@ -9,52 +9,58 @@ const WORKER_COUNT = 70; // 70 Parallel High-Speed Async Scraper Workers
 const OUTPUT_FILE = path.resolve(__dirname, 'sample_videos.json');
 const CHECKPOINT_FILE = path.resolve(__dirname, 'checkpoint_urls.json');
 
-// Target Categories across xhaccess & pornhat
-const TARGET_CATEGORIES = [
-  // pornhat categories
-  { name: 'Brazzers', source: 'pornhat', url: 'https://www.pornhat.com/sites/brazzers/' },
-  { name: 'Indian', source: 'pornhat', url: 'https://www.pornhat.com/search/indian/' },
-  { name: 'Desi', source: 'pornhat', url: 'https://www.pornhat.com/search/desi/' },
-  { name: 'Anal', source: 'pornhat', url: 'https://www.pornhat.com/categories/anal/' },
-  { name: 'Mom', source: 'pornhat', url: 'https://www.pornhat.com/categories/mom/' },
-  { name: 'MILF', source: 'pornhat', url: 'https://www.pornhat.com/categories/milf/' },
-  { name: 'Latina', source: 'pornhat', url: 'https://www.pornhat.com/categories/latina/' },
-  { name: 'Asian', source: 'pornhat', url: 'https://www.pornhat.com/categories/asian/' },
-  { name: 'Amateur', source: 'pornhat', url: 'https://www.pornhat.com/categories/amateur/' },
-  { name: 'Blowjob', source: 'pornhat', url: 'https://www.pornhat.com/categories/blowjob/' },
-  { name: 'Teen', source: 'pornhat', url: 'https://www.pornhat.com/categories/teen/' },
-  { name: 'Japanese', source: 'pornhat', url: 'https://www.pornhat.com/categories/japanese/' },
-  { name: 'Big Tits', source: 'pornhat', url: 'https://www.pornhat.com/categories/big-tits/' },
-  { name: 'Creampie', source: 'pornhat', url: 'https://www.pornhat.com/categories/creampie/' },
-
-  // xhaccess categories
-  { name: 'Indian', source: 'xh', url: 'https://xhaccess.com/search/indian' },
-  { name: 'Desi', source: 'xh', url: 'https://xhaccess.com/search/desi' },
-  { name: 'Mom', source: 'xh', url: 'https://xhaccess.com/search/mom' },
-  { name: 'Anal', source: 'xh', url: 'https://xhaccess.com/search/anal' },
-  { name: 'Latina', source: 'xh', url: 'https://xhaccess.com/search/latina' },
-  { name: 'Interracial', source: 'xh', url: 'https://xhaccess.com/search/interracial' },
-  { name: 'Amateur', source: 'xh', url: 'https://xhaccess.com/search/amateur' },
-  { name: 'Blowjob', source: 'xh', url: 'https://xhaccess.com/search/blowjob' },
-  { name: 'Big Tits', source: 'xh', url: 'https://xhaccess.com/search/big-tits' },
-  { name: 'Asian', source: 'xh', url: 'https://xhaccess.com/search/asian' },
-  { name: 'Mature', source: 'xh', url: 'https://xhaccess.com/search/mature' },
-  { name: 'Creampie', source: 'xh', url: 'https://xhaccess.com/search/creampie' },
-  { name: 'POV', source: 'xh', url: 'https://xhaccess.com/search/pov' },
-  { name: 'Group', source: 'xh', url: 'https://xhaccess.com/search/group' },
-  { name: 'Hardcore', source: 'xh', url: 'https://xhaccess.com/search/hardcore' },
-  { name: 'Teen', source: 'xh', url: 'https://xhaccess.com/search/teen' },
-  { name: 'MILF', source: 'xh', url: 'https://xhaccess.com/search/milf' },
-  { name: 'Threesome', source: 'xh', url: 'https://xhaccess.com/search/threesome' },
-  { name: 'Solo', source: 'xh', url: 'https://xhaccess.com/search/solo' },
-  { name: 'Lesbian', source: 'xh', url: 'https://xhaccess.com/search/lesbian' },
-  { name: 'Blonde', source: 'xh', url: 'https://xhaccess.com/search/blonde' },
-  { name: 'Brunette', source: 'xh', url: 'https://xhaccess.com/search/brunette' },
-  { name: 'Japanese', source: 'xh', url: 'https://xhaccess.com/search/japanese' },
-  { name: 'Pakistani', source: 'xh', url: 'https://xhaccess.com/search/pakistani' },
-  { name: 'Russian', source: 'xh', url: 'https://xhaccess.com/search/russian' },
-  { name: 'American', source: 'xh', url: 'https://xhaccess.com/search/american' }
+// Dynamic Multi-Page Target Generation across pornhat and xhaccess
+const PORN_BASE_CATEGORIES = [
+  { name: 'Brazzers', path: 'sites/brazzers' },
+  { name: 'Indian', path: 'search/indian' },
+  { name: 'Desi', path: 'search/desi' },
+  { name: 'Anal', path: 'categories/anal' },
+  { name: 'Mom', path: 'categories/mom' },
+  { name: 'MILF', path: 'categories/milf' },
+  { name: 'Latina', path: 'categories/latina' },
+  { name: 'Asian', path: 'categories/asian' },
+  { name: 'Amateur', path: 'categories/amateur' },
+  { name: 'Blowjob', path: 'categories/blowjob' },
+  { name: 'Teen', path: 'categories/teen' },
+  { name: 'Japanese', path: 'categories/japanese' },
+  { name: 'Big Tits', path: 'categories/big-tits' },
+  { name: 'Creampie', path: 'categories/creampie' },
+  { name: 'Hardcore', path: 'categories/hardcore' },
+  { name: 'Threesome', path: 'categories/threesome' },
+  { name: 'Babe', path: 'categories/babe' },
+  { name: 'Ebony', path: 'categories/ebony' },
+  { name: 'Interracial', path: 'categories/interracial' },
+  { name: 'Brunette', path: 'categories/brunette' },
+  { name: 'Blonde', path: 'categories/blonde' },
+  { name: 'Cumshot', path: 'categories/cumshot' },
+  { name: 'POV', path: 'categories/pov' }
 ];
+
+const XH_BASE_CATEGORIES = [
+  'Indian', 'Desi', 'Mom', 'Anal', 'Latina', 'Interracial', 'Amateur', 'Blowjob',
+  'Big Tits', 'Asian', 'Mature', 'Creampie', 'POV', 'Group', 'Hardcore', 'Teen',
+  'MILF', 'Threesome', 'Solo', 'Lesbian', 'Blonde', 'Brunette', 'Japanese',
+  'Pakistani', 'Russian', 'American'
+];
+
+const TARGET_CATEGORIES = [];
+
+// Generate multi-page Pornhat URLs (Pages 1 to 10)
+for (const cat of PORN_BASE_CATEGORIES) {
+  for (let p = 1; p <= 10; p++) {
+    const pagePath = p === 1 ? `https://www.pornhat.com/${cat.path}/` : `https://www.pornhat.com/${cat.path}/${p}/`;
+    TARGET_CATEGORIES.push({ name: cat.name, source: 'pornhat', url: pagePath });
+  }
+}
+
+// Generate multi-page xHAccess URLs (Pages 1 to 5)
+for (const catName of XH_BASE_CATEGORIES) {
+  const slug = catName.toLowerCase().replace(/ /g, '-');
+  for (let p = 1; p <= 5; p++) {
+    const pageUrl = p === 1 ? `https://xhaccess.com/search/${slug}` : `https://xhaccess.com/search/${slug}?page=${p}`;
+    TARGET_CATEGORIES.push({ name: catName, source: 'xh', url: pageUrl });
+  }
+}
 
 let catalog = [];
 if (fs.existsSync(OUTPUT_FILE)) {

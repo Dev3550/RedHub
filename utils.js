@@ -191,7 +191,10 @@ function parsePornhatCatalogPage(html) {
 
     const title = $el.attr('title') || $el.find('.video-title, .title').text().trim() || slug.replace(/-/g, ' ');
     const img = $el.find('img').first();
-    const thumbnail = img.attr('data-src') || img.attr('src') || '';
+    let thumbnail = img.attr('data-original') || img.attr('data-src') || img.attr('data-webp') || img.attr('src') || '';
+    if (thumbnail.startsWith('data:image')) {
+      thumbnail = img.attr('data-original') || img.attr('data-src') || img.attr('data-webp') || '';
+    }
     const duration = $el.find('.duration, .time, .duration-badge').text().trim() || '10:00';
 
     const cleanTitle = title.replace(/(xHamster|xHamsters|xNXX|Pornhub|XVideos|FreePornVideo|HotTube|inxxx|pornhat|xxx|video)/gi, 'ExoticHub').trim() || 'ExoticHub Video';
