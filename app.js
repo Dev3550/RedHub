@@ -104,7 +104,7 @@ async function initApp() {
   updateItemsPerPage();
 
   try {
-    const res = await fetch('./sample_videos.json?v=' + Date.now(), { cache: 'no-cache' });
+    const res = await fetch('/sample_videos.json?v=' + Date.now(), { cache: 'no-cache' });
     if (res.ok) {
       videosData = await res.json();
     } else {
@@ -270,7 +270,7 @@ function renderCurrentPage() {
       // Create Organic Video Card
       const card = document.createElement('a');
       card.className = 'video-card';
-      card.href = `./watch.html?id=${encodeURIComponent(video.id)}`;
+      card.href = `/watch.html?id=${encodeURIComponent(video.id)}`;
       card.style.textDecoration = 'none';
       card.style.color = 'inherit';
       card.style.display = 'block';
@@ -372,7 +372,7 @@ function renderTrendingCarousel() {
   trendingVideos.forEach((video, idx) => {
     const card = document.createElement('a');
     card.className = 'trending-card';
-    card.href = `./watch.html?id=${encodeURIComponent(video.id)}`;
+    card.href = `/watch.html?id=${encodeURIComponent(video.id)}`;
     card.style.textDecoration = 'none';
     card.style.color = 'inherit';
     card.innerHTML = `

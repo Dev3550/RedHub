@@ -43,7 +43,7 @@ async function initWatchPage() {
   const videoId = urlParams.get('id');
 
   try {
-    const res = await fetch('./sample_videos.json?v=' + Date.now(), { cache: 'no-cache' });
+    const res = await fetch('/sample_videos.json?v=' + Date.now(), { cache: 'no-cache' });
     if (res.ok) {
       catalogData = await res.json();
     } else {
