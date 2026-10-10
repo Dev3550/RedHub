@@ -60,25 +60,30 @@ export async function onRequest(context) {
         streamUrl = getFileMatch[1].replace(/&amp;/g, '&');
       }
     } else {
-      const initialsMatch = html.match(/window\.initials\s*=\s*(\{[\s\S]*?\});\s*<\/script>/s);
-      if (initialsMatch && initialsMatch[1]) {
-        try {
-          const parsed = JSON.parse(initialsMatch[1]);
-          const sources = parsed?.videoModel?.sources || parsed?.video?.sources || parsed?.xplayerSettings?.sources;
-          if (typeof sources?.hls === 'string') {
-            streamUrl = sources.hls;
-          } else if (typeof sources?.hls === 'object' && sources.hls !== null) {
-            const vals = Object.values(sources.hls);
-            if (vals.length) streamUrl = vals[vals.length - 1];
-          } else if (sources?.mp4) {
-            const keys = Object.keys(sources.mp4);
-            if (keys.length) streamUrl = sources.mp4[keys[keys.length - 1]];
-          }
-        } catch (_) {}
+      // 1. Direct regex match for master m3u8 stream playlist link (highest accuracy)
+      const m3u8Match = html.match(/(https?:\/\/[^"' ]+\.m3u8[^"' ]*)/i);
+      if (m3u8Match) {
+        streamUrl = m3u8Match[1].replace(/\\/g, '');
       }
+
+      // 2. Fallback window.initials parsing if direct regex did not match
       if (!streamUrl) {
-        const m3u8Match = html.match(/(https?:\\?\/\\?\/[^"' ]+\.m3u8[^"' ]*)/i);
-        if (m3u8Match) streamUrl = m3u8Match[1].replace(/\\/g, '');
+        const initialsMatch = html.match(/window\.initials\s*=\s*(\{[\s\S]*?\});\s*<\/script>/s);
+        if (initialsMatch && initialsMatch[1]) {
+          try {
+            const parsed = JSON.parse(initialsMatch[1]);
+            const sources = parsed?.videoModel?.sources || parsed?.video?.sources || parsed?.xplayerSettings?.sources || parsed?.prefetchedState?.videoModel?.sources;
+            if (typeof sources?.hls === 'string') {
+              streamUrl = sources.hls;
+            } else if (typeof sources?.hls === 'object' && sources.hls !== null) {
+              const vals = Object.values(sources.hls);
+              if (vals.length) streamUrl = vals[vals.length - 1];
+            } else if (sources?.mp4) {
+              const keys = Object.keys(sources.mp4);
+              if (keys.length) streamUrl = sources.mp4[keys[keys.length - 1]];
+            }
+          } catch (_) {}
+        }
       }
     }
 
