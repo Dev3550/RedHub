@@ -549,6 +549,8 @@
 
     document.addEventListener('DOMContentLoaded', () => {
       loadAdminData();
+      // Auto-refresh real-time viewer counts and new scraped videos every 10 seconds
+      setInterval(loadAdminData, 10000);
     });
   </script>
 </body>
