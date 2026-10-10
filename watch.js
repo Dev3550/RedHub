@@ -286,28 +286,7 @@ async function loadSmartVideoStream(video) {
 }
 
 /**
- * Fallback Embed Player Iframe Renderer for 100% Guaranteed Playback
- */
-function showEmbedPlayerFallback(video) {
-  if (!video || !video.page_url) return;
-  const playerWrapper = document.querySelector('.watch-player-wrapper');
-  if (!playerWrapper) return;
-
-  let embedUrl = video.page_url;
-  if (embedUrl.includes('inxxx.com')) {
-    embedUrl = embedUrl.replace('/v/', '/embed/');
-  } else if (embedUrl.includes('xhaccess.com')) {
-    embedUrl = embedUrl.replace('/videos/', '/embed/');
-  }
-
-  console.log('🎬 Rendering embed player fallback iframe:', embedUrl);
-  playerWrapper.innerHTML = `
-    <iframe src="${embedUrl}" style="width:100%; height:100%; min-height:480px; border:none; border-radius: var(--radius-md);" allowfullscreen allow="autoplay"></iframe>
-  `;
-}
-
-/**
- * Load HLS Stream via HLS.js or Native HTML5 Video Player with 403 Auto-Refresh & Embed Fallback
+ * Load HLS Stream via HLS.js or Native HTML5 Video Player
  */
 function loadHlsStream(streamUrl, video) {
   if (playerLoader) playerLoader.classList.remove('hidden');
@@ -318,9 +297,14 @@ function loadHlsStream(streamUrl, video) {
   }
 
   if (!streamUrl) {
-    console.warn('No stream URL provided, using embed player fallback');
-    showEmbedPlayerFallback(video);
+    console.warn('No stream URL provided for video ID:', video ? video.id : 'unknown');
+    if (playerLoader) playerLoader.classList.add('hidden');
     return;
+  }
+
+  // Ensure no-referrer policy so CDN stream servers (inxxx/xhaccess) do not send 403 Forbidden
+  if (hlsVideoPlayer) {
+    hlsVideoPlayer.setAttribute('referrerpolicy', 'no-referrer');
   }
 
   const triggerStreamRefreshFallback = async () => {
@@ -343,8 +327,8 @@ function loadHlsStream(streamUrl, video) {
       video.video_stream_url = freshUrl;
       loadHlsStream(freshUrl, video);
     } else {
-      console.error('❌ Direct stream token refresh unavailable, switching to embed player iframe fallback');
-      showEmbedPlayerFallback(video);
+      console.error('❌ Could not refresh stream URL live');
+      if (playerLoader) playerLoader.classList.add('hidden');
     }
   };
 
@@ -368,23 +352,33 @@ function loadHlsStream(streamUrl, video) {
     }
   };
 
-  hlsVideoPlayer.onplay = () => {
+  const hideLoader = () => {
     if (playerLoader) playerLoader.classList.add('hidden');
-    if (typeof window.closePauseAd === 'function') {
-      window.closePauseAd();
-    }
   };
 
-  hlsVideoPlayer.onerror = (e) => {
-    console.warn('HTML5 Video player error detected, triggering auto-refresh fallback');
-    triggerStreamRefreshFallback();
-  };
+  if (hlsVideoPlayer) {
+    hlsVideoPlayer.onplay = () => {
+      hideLoader();
+      if (typeof window.closePauseAd === 'function') {
+        window.closePauseAd();
+      }
+    };
 
-  hlsVideoPlayer.onpause = () => {
-    if (!hlsVideoPlayer.ended && typeof window.showPauseAd === 'function' && hlsVideoPlayer.currentTime > 1) {
-      window.showPauseAd();
-    }
-  };
+    hlsVideoPlayer.onplaying = hideLoader;
+    hlsVideoPlayer.oncanplay = hideLoader;
+    hlsVideoPlayer.onloadeddata = hideLoader;
+
+    hlsVideoPlayer.onerror = (e) => {
+      console.warn('HTML5 Video player error detected, triggering auto-refresh fallback:', e);
+      triggerStreamRefreshFallback();
+    };
+
+    hlsVideoPlayer.onpause = () => {
+      if (!hlsVideoPlayer.ended && typeof window.showPauseAd === 'function' && hlsVideoPlayer.currentTime > 1) {
+        window.showPauseAd();
+      }
+    };
+  }
 
   // Direct MP4 playback in Native HTML5 Video Player
   if (streamUrl.includes('.mp4')) {
@@ -414,7 +408,7 @@ function loadHlsStream(streamUrl, video) {
     hlsInstance.attachMedia(hlsVideoPlayer);
 
     hlsInstance.on(Hls.Events.MANIFEST_PARSED, (event, data) => {
-      if (playerLoader) playerLoader.classList.add('hidden');
+      hideLoader();
       if (data && data.levels) {
         populateQualityDropdown(data.levels);
       }
