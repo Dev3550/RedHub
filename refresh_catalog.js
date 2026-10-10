@@ -45,7 +45,7 @@ async function refreshAllExpiredTokens() {
       const streamUrl = item.video_stream_url;
       let isExpired = false;
 
-      if (!streamUrl) {
+      if (!streamUrl || streamUrl.includes('.t.mp4') || streamUrl.includes('.t.av1.mp4') || streamUrl.includes('/526x298.') || streamUrl.includes('trailer')) {
         isExpired = true;
       } else {
         try {

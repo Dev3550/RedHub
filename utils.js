@@ -85,7 +85,7 @@ function parseCatalogPage(html) {
           poster_url: v.imageURL || v.thumbURL || '',
           page_url: pageURL,
           trailer_url: v.trailerURL || '',
-          stream_url: v.trailerURL || v.imageURL || '',
+          stream_url: '',
           views: v.views || 0,
           channel: v.landing?.name || 'ExoticHub Original'
         });
@@ -243,35 +243,40 @@ async function extractStreamDetails(pageUrl) {
       mp4Url = getFileMatch[1].replace(/&amp;/g, '&');
     }
   } else {
-    // Parse xhaccess.com initials script
-    try {
-      const initialsMatch = html.match(/window\.initials\s*=\s*(\{.*?\});\s*<\/script>/s);
-      if (initialsMatch && initialsMatch[1]) {
-        const parsed = JSON.parse(initialsMatch[1]);
-        const videoModel = parsed?.videoModel || parsed?.video || {};
-        
-        if (videoModel.sources) {
-          if (videoModel.sources.hls) hlsUrl = videoModel.sources.hls;
-          if (videoModel.sources.mp4) {
-            const qualities = Object.keys(videoModel.sources.mp4);
-            if (qualities.length > 0) {
-              mp4Url = videoModel.sources.mp4[qualities[qualities.length - 1]];
+    // 1. Direct Regex scan for full length HLS .m3u8 stream
+    const m3u8Matches = html.match(/(https?:\\?\/\\?\/[^"' ]+\.m3u8[^"' ]*)/gi) || [];
+    const validM3u8 = m3u8Matches.map(u => u.replace(/\\/g, '')).filter(u => !u.includes('trailer') && !u.includes('thumb'));
+    if (validM3u8.length > 0) {
+      hlsUrl = validM3u8[0];
+    }
+
+    // 2. Parse xhaccess.com initials script if m3u8 regex did not match
+    if (!hlsUrl) {
+      try {
+        const initialsMatch = html.match(/window\.initials\s*=\s*(\{.*?\});\s*<\/script>/s);
+        if (initialsMatch && initialsMatch[1]) {
+          const parsed = JSON.parse(initialsMatch[1]);
+          const videoModel = parsed?.videoModel || parsed?.video || {};
+          
+          if (videoModel.sources) {
+            if (videoModel.sources.hls) hlsUrl = videoModel.sources.hls;
+            if (videoModel.sources.mp4) {
+              const qualities = Object.keys(videoModel.sources.mp4);
+              if (qualities.length > 0) {
+                mp4Url = videoModel.sources.mp4[qualities[qualities.length - 1]];
+              }
             }
           }
         }
-      }
-    } catch (_) {}
+      } catch (_) {}
+    }
 
-    // Fallback regex matching for .m3u8 or video source tags in HTML
+    // 3. Fallback regex for MP4 only if not trailer/thumb
     if (!hlsUrl && !mp4Url) {
-      const m3u8Match = html.match(/(https?:\\?\/\\?\/[^"' ]+\.m3u8[^"' ]*)/i);
-      if (m3u8Match) {
-        hlsUrl = m3u8Match[1].replace(/\\/g, '');
-      }
-
-      const mp4Match = html.match(/(https?:\\?\/\\?\/[^"' ]+\.mp4[^"' ]*)/i);
-      if (mp4Match && !isAdOrTracker(mp4Match[1])) {
-        mp4Url = mp4Match[1].replace(/\\/g, '');
+      const mp4Matches = html.match(/(https?:\\?\/\\?\/[^"' ]+\.mp4[^"' ]*)/gi) || [];
+      const validMp4 = mp4Matches.map(u => u.replace(/\\/g, '')).filter(u => !u.includes('.t.mp4') && !u.includes('.t.av1.mp4') && !u.includes('trailer') && !isAdOrTracker(u));
+      if (validMp4.length > 0) {
+        mp4Url = validMp4[0];
       }
     }
   }
