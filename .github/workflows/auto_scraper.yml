@@ -28,11 +28,11 @@ jobs:
       - name: Install Dependencies
         run: npm ci || npm install
 
-      - name: Refresh Expired Stream Tokens
-        run: node refresh_catalog.js
+      - name: Refresh Expired Stream Tokens (70 Parallel Scraper Workers)
+        run: node --max-old-space-size=4096 refresh_catalog.js
 
-      - name: Run 10-Worker Cluster Scraper
-        run: node scraper_cluster.js
+      - name: Run 70-Worker Cluster Scraper
+        run: node --max-old-space-size=4096 scraper_cluster.js
 
       - name: Regenerate Google Video Sitemap & Robots.txt
         run: node generate_sitemap.js

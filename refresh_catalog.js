@@ -3,7 +3,7 @@ const path = require('path');
 const { fetchHtml, extractStreamDetails } = require('./utils');
 
 const CATALOG_FILE = path.join(__dirname, 'sample_videos.json');
-const CONCURRENCY = 10; // 10 Stable Async Workers
+const CONCURRENCY = 70; // 70 High-Speed Parallel Async Scraper Workers
 
 async function refreshAllExpiredTokens() {
   console.log('==================================================================');

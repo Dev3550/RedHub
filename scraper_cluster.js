@@ -5,7 +5,7 @@ const fs = require('fs');
 const path = require('path');
 const { fetchHtml, parseCatalogPage, parseInxxxCatalogPage, extractStreamDetails, isAdOrTracker } = require('./utils');
 
-const WORKER_COUNT = 15;
+const WORKER_COUNT = 70; // 70 Parallel High-Speed Async Scraper Workers
 const OUTPUT_FILE = path.resolve(__dirname, 'sample_videos.json');
 const CHECKPOINT_FILE = path.resolve(__dirname, 'checkpoint_urls.json');
 
