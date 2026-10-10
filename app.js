@@ -349,7 +349,7 @@ function renderCurrentPage(isAppend = false) {
 }
 
 /**
- * Setup IntersectionObserver for Infinite Scroll
+ * Setup IntersectionObserver for Endless Infinite Scroll
  */
 function setupInfiniteScroll() {
   const sentinel = document.getElementById('infiniteScrollSentinel');
@@ -360,10 +360,18 @@ function setupInfiniteScroll() {
   }
 
   infiniteObserver = new IntersectionObserver((entries) => {
-    if (entries[0].isIntersecting && !isInfiniteLoading && displayCount < filteredVideos.length) {
+    if (entries[0].isIntersecting && !isInfiniteLoading) {
       isInfiniteLoading = true;
+
+      // Endless scroll loop: if near end of filteredVideos array, append another shuffled batch
+      if (displayCount >= filteredVideos.length - 8 && videosData.length > 0) {
+        const extraBatch = [...videosData].sort(() => Math.random() - 0.5);
+        filteredVideos.push(...extraBatch);
+      }
+
       displayCount += 24;
       renderCurrentPage(true);
+
       setTimeout(() => {
         isInfiniteLoading = false;
       }, 250);

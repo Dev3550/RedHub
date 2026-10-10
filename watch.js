@@ -744,39 +744,88 @@ let isRecLoading = false;
 /**
  * Render Recommended Videos with Infinite Scroll on Watch Page
  */
+let recRenderedCount = 0;
+
+/**
+ * Multi-Category Interleaved Shuffler for Rich Recommendation Mix
+ */
+function buildMultiCategoryRecommendations(currentVid) {
+  if (!catalogData || catalogData.length === 0) return [];
+  const currentId = String(currentVid ? currentVid.id : '');
+  const currentCatLower = String(currentVid ? currentVid.category : '').toLowerCase();
+
+  // Group catalog by category
+  const categoryMap = {};
+  catalogData.forEach(v => {
+    if (!v || String(v.id) === currentId) return;
+    const catKey = (v.category || 'Trending').toLowerCase();
+    if (!categoryMap[catKey]) categoryMap[catKey] = [];
+    categoryMap[catKey].push(v);
+  });
+
+  const categoryKeys = Object.keys(categoryMap);
+  const result = [];
+
+  // 1. Put current category videos at top (up to 8)
+  if (currentCatLower && categoryMap[currentCatLower]) {
+    const matchingCat = categoryMap[currentCatLower];
+    result.push(...matchingCat.slice(0, 8));
+  }
+
+  // 2. Interleave videos round-robin from ALL other categories
+  let maxLen = 0;
+  categoryKeys.forEach(k => {
+    if (categoryMap[k].length > maxLen) maxLen = categoryMap[k].length;
+  });
+
+  for (let step = 0; step < maxLen; step++) {
+    for (const key of categoryKeys) {
+      if (categoryMap[key][step] && !result.includes(categoryMap[key][step])) {
+        result.push(categoryMap[key][step]);
+      }
+    }
+  }
+
+  // Fallback if catalog is single category
+  catalogData.forEach(v => {
+    if (v && String(v.id) !== currentId && !result.includes(v)) {
+      result.push(v);
+    }
+  });
+
+  return result;
+}
+
+/**
+ * Render Recommended Videos with Endless Infinite Scroll on Watch Page
+ */
 function renderRecommendations(video) {
   if (!recommendedGrid) return;
 
-  const catLower = (video.category || '').toLowerCase();
-  
-  // Filter by matching category or title keyword, excluding current video
-  let categoryRecs = catalogData.filter(v => String(v.id) !== String(video.id) && (
-    (v.category && v.category.toLowerCase() === catLower) ||
-    (v.title && catLower && v.title.toLowerCase().includes(catLower))
-  ));
+  allRecommendations = buildMultiCategoryRecommendations(video);
+  recDisplayCount = 18;
+  recRenderedCount = 0;
 
-  // Rest of catalog for endless mixing
-  let otherRecs = catalogData.filter(v => String(v.id) !== String(video.id) && !categoryRecs.includes(v));
-
-  // Mix category recommendations first, followed by remaining catalog
-  allRecommendations = [...categoryRecs, ...otherRecs];
-  recDisplayCount = 12;
-
-  renderRecCards();
+  renderRecCards(false);
   setupWatchInfiniteScroll();
 }
 
-function renderRecCards() {
+function renderRecCards(isAppend = false) {
   if (!recommendedGrid || !allRecommendations.length) return;
-  recommendedGrid.innerHTML = '';
 
-  const visible = allRecommendations.slice(0, recDisplayCount);
-  const recCountBadge = document.getElementById('recCountBadge');
-  if (recCountBadge) {
-    recCountBadge.textContent = `${allRecommendations.length.toLocaleString()} Recommended Videos`;
+  if (!isAppend) {
+    recommendedGrid.innerHTML = '';
+    recRenderedCount = 0;
   }
 
-  visible.forEach(rec => {
+  const recCountBadge = document.getElementById('recCountBadge');
+  if (recCountBadge) {
+    recCountBadge.textContent = `${allRecommendations.length.toLocaleString()}+ Mixed Category Videos`;
+  }
+
+  const newCards = allRecommendations.slice(recRenderedCount, recDisplayCount);
+
+  newCards.forEach(rec => {
     const card = document.createElement('article');
     card.className = 'video-card';
     card.style.cursor = 'pointer';
@@ -806,9 +855,12 @@ function renderRecCards() {
     recommendedGrid.appendChild(card);
   });
 
+  recRenderedCount = Math.min(recDisplayCount, allRecommendations.length);
+
   const sentinel = document.getElementById('recSentinel');
   if (sentinel) {
-    sentinel.style.display = recDisplayCount >= allRecommendations.length ? 'none' : 'flex';
+    // Keep sentinel active for endless scrolling
+    sentinel.style.display = 'flex';
   }
 }
 
@@ -819,13 +871,23 @@ function setupWatchInfiniteScroll() {
   if (recObserver) recObserver.disconnect();
 
   recObserver = new IntersectionObserver((entries) => {
-    if (entries[0].isIntersecting && !isRecLoading && recDisplayCount < allRecommendations.length) {
+    if (entries[0].isIntersecting && !isRecLoading) {
       isRecLoading = true;
+      
+      // Endless scroll loop: if near end of allRecommendations, append freshly shuffled batch
+      if (recDisplayCount >= allRecommendations.length - 6) {
+        const extraBatch = [...allRecommendations].sort(() => Math.random() - 0.5);
+        allRecommendations.push(...extraBatch);
+      }
+
       recDisplayCount += 12;
-      renderRecCards();
-      setTimeout(() => { isRecLoading = false; }, 300);
+      renderRecCards(true);
+
+      setTimeout(() => {
+        isRecLoading = false;
+      }, 250);
     }
-  }, { rootMargin: '300px' });
+  }, { rootMargin: '400px' });
 
   recObserver.observe(sentinel);
 }
