@@ -25,8 +25,7 @@ export async function onRequest(context) {
 
   try {
     let referer = 'https://xhaccess.com/';
-    if (pageUrl.includes('inxxx.com')) referer = 'https://www.inxxx.com/';
-    else if (pageUrl.includes('pornhat.com')) referer = 'https://www.pornhat.com/';
+    if (pageUrl.includes('pornhat.com')) referer = 'https://www.pornhat.com/';
 
     const response = await fetch(pageUrl, {
       headers: {

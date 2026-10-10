@@ -9,7 +9,7 @@ const WORKER_COUNT = 70; // 70 Parallel High-Speed Async Scraper Workers
 const OUTPUT_FILE = path.resolve(__dirname, 'sample_videos.json');
 const CHECKPOINT_FILE = path.resolve(__dirname, 'checkpoint_urls.json');
 
-// Target Categories across xhaccess, inxxx & pornhat
+// Target Categories across xhaccess & pornhat
 const TARGET_CATEGORIES = [
   // pornhat categories
   { name: 'Brazzers', source: 'pornhat', url: 'https://www.pornhat.com/sites/brazzers/' },
@@ -53,35 +53,7 @@ const TARGET_CATEGORIES = [
   { name: 'Japanese', source: 'xh', url: 'https://xhaccess.com/search/japanese' },
   { name: 'Pakistani', source: 'xh', url: 'https://xhaccess.com/search/pakistani' },
   { name: 'Russian', source: 'xh', url: 'https://xhaccess.com/search/russian' },
-  { name: 'American', source: 'xh', url: 'https://xhaccess.com/search/american' },
-
-  // inxxx categories
-  { name: 'Indian', source: 'inxxx', url: 'https://www.inxxx.com/search/indian/' },
-  { name: 'Desi', source: 'inxxx', url: 'https://www.inxxx.com/search/desi/' },
-  { name: 'Mom', source: 'inxxx', url: 'https://www.inxxx.com/search/mom/' },
-  { name: 'Anal', source: 'inxxx', url: 'https://www.inxxx.com/search/anal/' },
-  { name: 'Latina', source: 'inxxx', url: 'https://www.inxxx.com/search/latina/' },
-  { name: 'Interracial', source: 'inxxx', url: 'https://www.inxxx.com/search/interracial/' },
-  { name: 'Amateur', source: 'inxxx', url: 'https://www.inxxx.com/search/amateur/' },
-  { name: 'Blowjob', source: 'inxxx', url: 'https://www.inxxx.com/search/blowjob/' },
-  { name: 'Big Tits', source: 'inxxx', url: 'https://www.inxxx.com/search/big-tits/' },
-  { name: 'Asian', source: 'inxxx', url: 'https://www.inxxx.com/search/asian/' },
-  { name: 'MILF', source: 'inxxx', url: 'https://www.inxxx.com/search/milf/' },
-  { name: 'Mature', source: 'inxxx', url: 'https://www.inxxx.com/search/mature/' },
-  { name: 'Creampie', source: 'inxxx', url: 'https://www.inxxx.com/search/creampie/' },
-  { name: 'POV', source: 'inxxx', url: 'https://www.inxxx.com/search/pov/' },
-  { name: 'Group', source: 'inxxx', url: 'https://www.inxxx.com/search/group/' },
-  { name: 'Hardcore', source: 'inxxx', url: 'https://www.inxxx.com/search/hardcore/' },
-  { name: 'Teen', source: 'inxxx', url: 'https://www.inxxx.com/search/teen/' },
-  { name: 'Threesome', source: 'inxxx', url: 'https://www.inxxx.com/search/threesome/' },
-  { name: 'Solo', source: 'inxxx', url: 'https://www.inxxx.com/search/solo/' },
-  { name: 'Lesbian', source: 'inxxx', url: 'https://www.inxxx.com/search/lesbian/' },
-  { name: 'Blonde', source: 'inxxx', url: 'https://www.inxxx.com/search/blonde/' },
-  { name: 'Brunette', source: 'inxxx', url: 'https://www.inxxx.com/search/brunette/' },
-  { name: 'Japanese', source: 'inxxx', url: 'https://www.inxxx.com/search/japanese/' },
-  { name: 'Pakistani', source: 'inxxx', url: 'https://www.inxxx.com/search/pakistani/' },
-  { name: 'Russian', source: 'inxxx', url: 'https://www.inxxx.com/search/russian/' },
-  { name: 'American', source: 'inxxx', url: 'https://www.inxxx.com/search/american/' }
+  { name: 'American', source: 'xh', url: 'https://xhaccess.com/search/american' }
 ];
 
 let catalog = [];
@@ -101,7 +73,7 @@ function saveProgress() {
 
   for (const v of catalog) {
     const pageUrl = v.page_url || '';
-    const validDomain = pageUrl.includes('xhaccess.com') || pageUrl.includes('inxxx.com') || pageUrl.includes('pornhat.com');
+    const validDomain = pageUrl.includes('xhaccess.com') || pageUrl.includes('pornhat.com');
     if (!validDomain || !v.video_stream_url || !v.id) continue;
     if (seenIds.has(v.id) || seenUrls.has(pageUrl)) continue;
 

@@ -106,7 +106,7 @@ async function refreshAllExpiredTokens() {
 
   for (const v of catalog) {
     const pageUrl = v.page_url || '';
-    if ((pageUrl.includes('xhaccess.com') || pageUrl.includes('inxxx.com') || pageUrl.includes('pornhat.com')) && v.video_stream_url) {
+    if ((pageUrl.includes('xhaccess.com') || pageUrl.includes('pornhat.com')) && v.video_stream_url) {
       if (v.channel === 'HotTube Creator' || v.channel === 'HotTube Original') {
         v.channel = 'ExoticHub Original';
       }
