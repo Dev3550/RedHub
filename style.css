@@ -1493,7 +1493,7 @@ body {
 
 /* Device Visibility Toggles */
 @media (max-width: 768px) {
-  .tablet-desktop-ad, .desktop-only-ad {
+  .tablet-desktop-ad, .desktop-only-ad, .exoclick-display-banner-container {
     display: none !important;
   }
   .mobile-only-ad {
@@ -1502,79 +1502,117 @@ body {
 }
 
 @media (min-width: 769px) {
-  .mobile-only-ad {
+  .mobile-only-ad, .exoclick-mobile-sticky-footer {
     display: none !important;
   }
-  .tablet-desktop-ad, .desktop-only-ad {
+  .tablet-desktop-ad, .desktop-only-ad, .exoclick-display-banner-container {
     display: flex !important;
   }
 }
 
-/* 1. Desktop & Tablet Horizontal Header Display Banner (Zone 6051430) */
+/* 1. Desktop & Tablet Horizontal Header Display Banner (Zone 6051430) [728x90 / 970x90] */
 .exoclick-display-banner-container {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  margin: 14px auto;
-  width: 100%;
-  max-width: 970px;
-  min-height: 90px;
-  background: var(--bg-card, #121218);
-  border: 1px solid var(--border-color, rgba(255, 255, 255, 0.08));
-  border-radius: 8px;
-  padding: 6px;
-  box-sizing: border-box;
-  overflow: hidden;
-  text-align: center;
-}
-
-/* 2. Mobile Banner Container (Zone 6051442) [300x100 / 300x50 / 320x50] */
-.exoclick-mobile-banner-container {
   display: flex;
   align-items: center;
   justify-content: center;
   margin: 12px auto;
   width: 100%;
-  max-width: 320px;
-  min-height: 50px;
-  background: var(--bg-card, #121218);
-  border: 1px solid var(--border-color, rgba(255, 255, 255, 0.08));
-  border-radius: 8px;
-  padding: 4px;
+  max-width: 970px;
+  max-height: 90px;
+  min-height: 0;
+  background: transparent !important;
+  border: none !important;
+  padding: 0 !important;
+  box-sizing: border-box;
+  overflow: hidden;
+  text-align: center;
+}
+
+/* 2. In-Page Rectangle Ad Container (Zone 6051442 / 300x250) */
+.exoclick-mobile-banner-container, .exoclick-rectangle-container {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin: 12px auto;
+  width: 100%;
+  max-width: 300px;
+  max-height: 250px;
+  min-height: 0;
+  background: transparent !important;
+  border: none !important;
+  padding: 0 !important;
   box-sizing: border-box;
   overflow: hidden;
 }
 
-/* 3. Native Recommendations Widget Container (Zone 6051416) */
+/* 3. Mobile Sticky Footer Banner (Zone 6051442) [Thin 320x50 Strip] */
+.exoclick-mobile-sticky-footer {
+  display: none;
+}
+
+@media (max-width: 768px) {
+  .exoclick-mobile-sticky-footer {
+    display: flex !important;
+    position: fixed;
+    bottom: 0;
+    left: 0;
+    right: 0;
+    z-index: 99999;
+    height: 52px !important;
+    max-height: 52px !important;
+    align-items: center;
+    justify-content: center;
+    background: rgba(10, 10, 16, 0.96) !important;
+    backdrop-filter: blur(10px);
+    border-top: 1px solid rgba(255, 0, 127, 0.3) !important;
+    margin: 0 !important;
+    max-width: 100% !important;
+    padding: 0 !important;
+    box-shadow: 0 -4px 20px rgba(0, 0, 0, 0.8);
+    overflow: hidden;
+  }
+
+  .exoclick-mobile-sticky-footer ins,
+  .exoclick-mobile-sticky-footer iframe {
+    max-height: 50px !important;
+    max-width: 320px !important;
+  }
+
+  body {
+    padding-bottom: 56px !important;
+  }
+}
+
+/* 4. Native Recommendations Widget Container (Zone 6051416) */
 .exoclick-native-widget-container {
   display: flex;
   flex-direction: column;
   align-items: center;
   justify-content: center;
-  margin: 16px auto;
+  margin: 14px auto;
   width: 100%;
   max-width: 1200px;
-  background: var(--bg-card, #121218);
-  border: 1px solid var(--border-color, rgba(255, 255, 255, 0.08));
-  border-radius: 8px;
-  padding: 10px;
+  min-height: 0;
+  background: transparent !important;
+  border: none !important;
+  padding: 0 !important;
   box-sizing: border-box;
   overflow: hidden;
 }
 
-/* 4. Outstream Video Ad Container (Zone 6051428) */
+/* 5. Outstream Video Ad Container (Zone 6051428) */
 .exoclick-outstream-container {
   display: flex;
   flex-direction: column;
   align-items: center;
   justify-content: center;
-  margin: 16px auto;
+  margin: 14px auto;
   width: 100%;
   max-width: 640px;
-  background: var(--bg-card, #121218);
-  border: 1px solid var(--border-color, rgba(255, 255, 255, 0.08));
-  border-radius: 8px;
-  padding: 8px;
+  min-height: 0;
+  background: transparent !important;
+  border: none !important;
+  padding: 0 !important;
   box-sizing: border-box;
   overflow: hidden;
 }
@@ -1584,6 +1622,8 @@ body {
 .exoclick-display-banner-container iframe,
 .exoclick-mobile-banner-container ins,
 .exoclick-mobile-banner-container iframe,
+.exoclick-rectangle-container ins,
+.exoclick-rectangle-container iframe,
 .exoclick-native-widget-container ins,
 .exoclick-native-widget-container iframe,
 .exoclick-outstream-container ins,
@@ -1592,6 +1632,7 @@ body {
   margin: 0 auto !important;
   display: block !important;
 }
+
 
 
 
