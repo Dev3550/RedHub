@@ -377,22 +377,27 @@ function loadHlsStream(streamUrl, video, options = { shouldPlay: true }) {
       video.video_stream_url = freshUrl;
       loadHlsStream(freshUrl, video, { shouldPlay: true });
     } else {
-      console.error('❌ Direct stream token unavailable, switching to fail-safe player fallback...');
+      console.error('❌ Direct stream token unavailable, switching to fail-safe embed iframe fallback...');
       if (playerLoader) playerLoader.classList.add('hidden');
-      if (hlsVideoPlayer) hlsVideoPlayer.classList.add('hidden');
-      if (embedVideoPlayer && video.page_url) {
+      const hlsEl = document.getElementById('hlsVideoPlayer');
+      if (hlsEl) hlsEl.classList.add('hidden');
+      
+      const embedEl = document.getElementById('embedVideoPlayer');
+      if (embedEl && video.page_url) {
         let embedUrl = video.page_url;
         if (video.page_url.includes('pornhat.com')) {
           const pornhatIdMatch = video.page_url.match(/video\/([^/]+)/);
           const pid = pornhatIdMatch ? pornhatIdMatch[1] : video.id;
           embedUrl = `https://www.pornhat.com/embed/${pid}`;
+        } else if (video.page_url.includes('inxxx.com')) {
+          embedUrl = `https://www.inxxx.com/embed/${video.id}`;
         } else {
           const videoIdMatch = video.page_url.match(/videos\/([^/]+)/);
           const vid = videoIdMatch ? videoIdMatch[1] : video.id;
           embedUrl = `https://xhaccess.com/embed/${vid}`;
         }
-        embedVideoPlayer.src = embedUrl;
-        embedVideoPlayer.classList.remove('hidden');
+        embedEl.src = embedUrl;
+        embedEl.classList.remove('hidden');
       }
     }
   };
@@ -593,12 +598,17 @@ function populateQualityDropdown(levels) {
   });
 
   if (inPlayerQualityBtn && inPlayerQualityMenu) {
-    inPlayerQualityBtn.onclick = (e) => {
-      e.stopPropagation();
+    const handleToggleQuality = (e) => {
+      if (e) {
+        e.preventDefault();
+        e.stopPropagation();
+      }
       const inPlayerSubMenu = document.getElementById('inPlayerSubMenu');
       if (inPlayerSubMenu) inPlayerSubMenu.classList.add('hidden');
       inPlayerQualityMenu.classList.toggle('hidden');
     };
+    inPlayerQualityBtn.onclick = handleToggleQuality;
+    inPlayerQualityBtn.ontouchstart = handleToggleQuality;
   }
 }
 
@@ -741,12 +751,17 @@ function populateSubtitleDropdown(tracks) {
   }
 
   if (inPlayerSubBtn && inPlayerSubMenu) {
-    inPlayerSubBtn.onclick = (e) => {
-      e.stopPropagation();
+    const handleToggleSub = (e) => {
+      if (e) {
+        e.preventDefault();
+        e.stopPropagation();
+      }
       const inPlayerQualityMenu = document.getElementById('inPlayerQualityMenu');
       if (inPlayerQualityMenu) inPlayerQualityMenu.classList.add('hidden');
       inPlayerSubMenu.classList.toggle('hidden');
     };
+    inPlayerSubBtn.onclick = handleToggleSub;
+    inPlayerSubBtn.ontouchstart = handleToggleSub;
   }
 }
 

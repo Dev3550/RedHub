@@ -3,22 +3,22 @@
    ========================================================================== */
 
 :root {
-  --bg-dark: #12040b;
-  --bg-card: #1f0714;
-  --bg-card-hover: #2d0b1d;
-  --bg-navbar: rgba(18, 4, 11, 0.94);
+  --bg-dark: #f8f9fa;
+  --bg-card: #ffffff;
+  --bg-card-hover: #fff0f6;
+  --bg-navbar: rgba(255, 255, 255, 0.96);
   --accent-primary: #ff007f;
   --accent-secondary: #e0115f;
   --accent-light: #ff4da6;
   --accent-gradient: linear-gradient(135deg, #ff007f 0%, #ff2a8d 50%, #e0115f 100%);
   --accent-hover: linear-gradient(135deg, #ff2a8d 0%, #ff007f 50%, #b80058 100%);
-  --text-main: #fff0f6;
-  --text-muted: #d4a5be;
-  --text-dim: #9e6d87;
-  --border-color: rgba(255, 0, 127, 0.28);
-  --glass-bg: rgba(31, 7, 20, 0.85);
-  --shadow-lg: 0 16px 36px rgba(0, 0, 0, 0.75);
-  --shadow-glow: 0 0 28px rgba(255, 0, 127, 0.55);
+  --text-main: #111827;
+  --text-muted: #4b5563;
+  --text-dim: #6b7280;
+  --border-color: rgba(255, 0, 127, 0.22);
+  --glass-bg: rgba(255, 255, 255, 0.92);
+  --shadow-lg: 0 10px 30px rgba(255, 0, 127, 0.08);
+  --shadow-glow: 0 4px 20px rgba(255, 0, 127, 0.25);
   --radius-sm: 8px;
   --radius-md: 14px;
   --radius-lg: 20px;
@@ -32,10 +32,10 @@
 }
 
 body {
-  background-color: var(--bg-dark);
+  background-color: #f8f9fa;
   background-image: 
-    radial-gradient(circle at 15% 15%, rgba(255, 0, 127, 0.14) 0%, transparent 50%),
-    radial-gradient(circle at 85% 70%, rgba(224, 17, 95, 0.12) 0%, transparent 50%);
+    radial-gradient(circle at 15% 15%, rgba(255, 0, 127, 0.06) 0%, transparent 50%),
+    radial-gradient(circle at 85% 70%, rgba(224, 17, 95, 0.05) 0%, transparent 50%);
   color: var(--text-main);
   font-family: var(--font-family);
   min-height: 100vh;
@@ -131,7 +131,7 @@ body {
   font-weight: 900;
   font-style: italic;
   letter-spacing: -0.5px;
-  color: #ffffff;
+  color: #111827;
   text-transform: uppercase;
 }
 
@@ -160,20 +160,21 @@ body {
 .search-box input {
   width: 100%;
   padding: 12px 42px 12px 46px;
-  background: rgba(255, 255, 255, 0.05);
-  border: 1px solid var(--border-color);
+  background: #ffffff;
+  border: 1.5px solid var(--border-color);
   border-radius: 30px;
-  color: var(--text-main);
+  color: #111827;
   font-size: 0.95rem;
   font-family: var(--font-family);
   outline: none;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.04);
   transition: all 0.3s ease;
 }
 
 .search-box input:focus {
-  background: rgba(255, 255, 255, 0.08);
+  background: #ffffff;
   border-color: var(--accent-primary);
-  box-shadow: 0 0 16px rgba(255, 0, 127, 0.35);
+  box-shadow: 0 0 16px rgba(255, 0, 127, 0.25);
 }
 
 .clear-btn {
@@ -1376,7 +1377,7 @@ body {
   position: absolute;
   top: 14px;
   right: 14px;
-  z-index: 35;
+  z-index: 800;
   display: flex;
   align-items: center;
   gap: 10px;
@@ -1394,8 +1395,8 @@ body {
 }
 
 .in-player-btn {
-  background: rgba(13, 14, 18, 0.85);
-  border: 1px solid rgba(255, 0, 127, 0.4);
+  background: rgba(13, 14, 18, 0.88);
+  border: 1.5px solid var(--accent-primary);
   color: #ffffff;
   padding: 6px 14px;
   border-radius: 20px;
@@ -1408,31 +1409,34 @@ body {
   gap: 6px;
   backdrop-filter: blur(8px);
   -webkit-backdrop-filter: blur(8px);
-  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.6);
+  box-shadow: 0 4px 12px rgba(255, 0, 127, 0.3);
   transition: all 0.25s ease;
+  user-select: none;
+  touch-action: manipulation;
+  -webkit-tap-highlight-color: transparent;
 }
 
-.in-player-btn:hover {
-  background: rgba(255, 0, 127, 0.3);
-  border-color: #ff007f;
-  transform: scale(1.04);
+.in-player-btn:hover, .in-player-btn:active {
+  background: var(--accent-gradient);
+  border-color: transparent;
+  transform: scale(1.05);
 }
 
 .in-player-menu {
   position: absolute;
   top: calc(100% + 6px);
   right: 0;
-  background: rgba(13, 14, 18, 0.95);
-  border: 1px solid var(--border-color);
+  background: rgba(18, 18, 24, 0.96);
+  border: 1.5px solid var(--accent-primary);
   border-radius: 12px;
   padding: 6px;
-  min-width: 140px;
+  min-width: 150px;
   max-height: 220px;
   overflow-y: auto;
-  box-shadow: 0 10px 30px rgba(0,0,0,0.9), var(--shadow-glow);
+  box-shadow: 0 10px 30px rgba(0,0,0,0.8), var(--shadow-glow);
   backdrop-filter: blur(12px);
   -webkit-backdrop-filter: blur(12px);
-  z-index: 40;
+  z-index: 850;
   display: flex;
   flex-direction: column;
   gap: 4px;
