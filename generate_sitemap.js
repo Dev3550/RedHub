@@ -102,6 +102,11 @@ function generateSitemap() {
     xml += `      <video:publication_date>2026-09-13T00:00:00+00:00</video:publication_date>\n`;
     xml += `      <video:category>${category}</video:category>\n`;
     xml += `      <video:uploader>${channel}</video:uploader>\n`;
+    xml += `      <video:tag>Brazzers</video:tag>\n`;
+    xml += `      <video:tag>Brazzers HD</video:tag>\n`;
+    xml += `      <video:tag>ExoticHub</video:tag>\n`;
+    xml += `      <video:tag>ExoticHub Original</video:tag>\n`;
+    xml += `      <video:tag>${category}</video:tag>\n`;
     xml += `    </video:video>\n`;
     xml += `  </url>\n\n`;
   }
