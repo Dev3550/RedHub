@@ -486,6 +486,11 @@ function loadHlsStream(streamUrl, video, options = { shouldPlay: true }) {
       if (data && data.levels) {
         populateQualityDropdown(data.levels);
       }
+      if (hlsInstance.subtitleTracks && hlsInstance.subtitleTracks.length > 0) {
+        populateSubtitleDropdown(hlsInstance.subtitleTracks);
+      } else {
+        populateSubtitleDropdown(video ? video.subtitles : null);
+      }
       startPlayback();
     });
 
@@ -588,6 +593,39 @@ function setHlsQuality(selectedLevel) {
     const targetLvl = hlsInstance.levels[selectedLevel];
     console.log(`🎬 HLS Quality switched live to Level index ${selectedLevel} (${targetLvl ? targetLvl.height : 'custom'}p)`);
   }
+}
+
+/**
+ * Dynamically Populate Subtitle Tracks Dropdown
+ */
+function populateSubtitleDropdown(tracks) {
+  const subtitleSelect = document.getElementById('subtitleSelect');
+  const subtitleWrapper = document.getElementById('subtitleWrapper');
+  if (!subtitleSelect) return;
+
+  if (!tracks || tracks.length === 0) {
+    if (subtitleWrapper) subtitleWrapper.style.display = 'none';
+    return;
+  }
+
+  if (subtitleWrapper) subtitleWrapper.style.display = 'flex';
+  subtitleSelect.innerHTML = '<option value="-1">💬 Subtitles Off</option>';
+
+  tracks.forEach((track, index) => {
+    const opt = document.createElement('option');
+    opt.value = index;
+    const label = track.name || track.lang || track.label || `Track ${index + 1}`;
+    opt.textContent = `💬 ${label.toUpperCase()}`;
+    subtitleSelect.appendChild(opt);
+  });
+
+  subtitleSelect.onchange = (e) => {
+    const targetIdx = parseInt(e.target.value);
+    if (hlsInstance) {
+      hlsInstance.subtitleTrack = targetIdx;
+      console.log('💬 Subtitle track switched live to index:', targetIdx);
+    }
+  };
 }
 
 let recDisplayCount = 12;

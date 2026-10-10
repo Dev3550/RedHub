@@ -130,9 +130,9 @@
         <iframe id="embedVideoPlayer" class="hidden" allowfullscreen referrerpolicy="no-referrer"></iframe>
       </div>
 
-      <!-- Resolution Selector Bar -->
-      <div class="player-toolbar">
-        <div class="quality-selector-wrap">
+      <!-- Resolution & Subtitles Selector Bar -->
+      <div class="player-toolbar" style="display: flex; gap: 15px; flex-wrap: wrap; align-items: center; justify-content: space-between;">
+        <div class="quality-selector-wrap" style="display: flex; align-items: center; gap: 8px;">
           <label for="qualitySelect"><i class="fa-solid fa-sliders"></i> Stream Quality:</label>
           <select id="qualitySelect" class="quality-select">
             <option value="-1" selected>Auto 1080p (Adaptive HLS)</option>
@@ -142,6 +142,15 @@
             <option value="3">360p Mobile</option>
           </select>
         </div>
+
+        <div class="quality-selector-wrap" id="subtitleWrapper" style="display: flex; align-items: center; gap: 8px;">
+          <label for="subtitleSelect"><i class="fa-solid fa-closed-captioning"></i> Subtitles:</label>
+          <select id="subtitleSelect" class="quality-select">
+            <option value="-1" selected>💬 Subtitles Off</option>
+            <option value="0">💬 English CC</option>
+          </select>
+        </div>
+
         <div class="stream-status">
           <span class="live-indicator"><i class="fa-solid fa-circle"></i> Live HLS Stream</span>
         </div>

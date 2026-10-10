@@ -142,17 +142,30 @@
           <span id="watchCategory" class="badge-stream"><i class="fa-solid fa-layer-group"></i> Category</span>
         </div>
 
-        <!-- Video Quality Control Bar (Dropdown) -->
-        <div class="quality-bar-wrapper">
-          <label for="qualitySelect" class="quality-label"><i class="fa-solid fa-sliders"></i> Resolution Quality:</label>
-          <div class="select-dropdown-wrapper">
-            <select id="qualitySelect" class="quality-dropdown-select">
-              <option value="-1" selected>⚡ Auto (Adaptive)</option>
-              <option value="720">📺 720p HD</option>
-              <option value="480">🎥 480p SD</option>
-              <option value="360">📱 360p Data Saver</option>
-            </select>
-            <i class="fa-solid fa-chevron-down select-arrow"></i>
+        <!-- Video Quality Control Bar & Subtitles Dropdown -->
+        <div class="quality-bar-wrapper" style="display: flex; gap: 15px; flex-wrap: wrap; align-items: center; justify-content: space-between;">
+          <div class="control-group" style="display: flex; align-items: center; gap: 8px;">
+            <label for="qualitySelect" class="quality-label"><i class="fa-solid fa-sliders"></i> Stream Quality:</label>
+            <div class="select-dropdown-wrapper">
+              <select id="qualitySelect" class="quality-dropdown-select">
+                <option value="-1" selected>⚡ Auto (Adaptive HLS)</option>
+                <option value="720">📺 720p HD</option>
+                <option value="480">🎥 480p SD</option>
+                <option value="360">📱 360p Data Saver</option>
+              </select>
+              <i class="fa-solid fa-chevron-down select-arrow"></i>
+            </div>
+          </div>
+
+          <div class="control-group" id="subtitleWrapper" style="display: flex; align-items: center; gap: 8px;">
+            <label for="subtitleSelect" class="quality-label"><i class="fa-solid fa-closed-captioning"></i> Subtitles:</label>
+            <div class="select-dropdown-wrapper">
+              <select id="subtitleSelect" class="quality-dropdown-select">
+                <option value="-1" selected>💬 Subtitles Off</option>
+                <option value="0">💬 English CC</option>
+              </select>
+              <i class="fa-solid fa-chevron-down select-arrow"></i>
+            </div>
           </div>
         </div>
 
