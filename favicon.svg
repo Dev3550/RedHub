@@ -1,0 +1,23 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" width="512" height="512">
+  <defs>
+    <linearGradient id="bgGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#14141e"/>
+      <stop offset="100%" stop-color="#09090e"/>
+    </linearGradient>
+    <linearGradient id="badgeGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#ff007f"/>
+      <stop offset="50%" stop-color="#ff2a8d"/>
+      <stop offset="100%" stop-color="#d9006c"/>
+    </linearGradient>
+  </defs>
+
+  <!-- Dark Outer Badge Background -->
+  <rect width="512" height="512" rx="120" fill="url(#bgGrad)"/>
+  <rect width="496" height="496" x="8" y="8" rx="112" fill="none" stroke="#ff007f" stroke-width="6" stroke-opacity="0.3"/>
+
+  <!-- Hot Pink Center Badge -->
+  <rect width="360" height="360" x="76" y="76" rx="80" fill="url(#badgeGrad)"/>
+  
+  <!-- EH Bold Text Emblem -->
+  <text x="256" y="325" font-family="'Outfit', 'Inter', -apple-system, sans-serif" font-weight="900" font-size="210" font-style="italic" fill="#ffffff" text-anchor="middle" letter-spacing="-8">EH</text>
+</svg>
