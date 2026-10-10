@@ -97,9 +97,6 @@ function generateSitemap() {
     xml += `      <video:thumbnail_loc>${thumbnailUrl}</video:thumbnail_loc>\n`;
     xml += `      <video:title>${title}</video:title>\n`;
     xml += `      <video:description>${description}</video:description>\n`;
-    if (streamUrl) {
-      xml += `      <video:content_loc>${streamUrl}</video:content_loc>\n`;
-    }
     xml += `      <video:player_loc allow_embed="yes">${embedUrl}</video:player_loc>\n`;
     xml += `      <video:duration>${durationSec}</video:duration>\n`;
     xml += `      <video:publication_date>2026-09-13T00:00:00+00:00</video:publication_date>\n`;
