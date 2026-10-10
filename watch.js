@@ -225,7 +225,7 @@ function applySeoMetadata(video) {
       "@type": "VideoObject",
       "name": video.title,
       "description": pageDesc,
-      "thumbnailUrl": [videoPoster],
+      "thumbnailUrl": [safeBrandImage],
       "uploadDate": "2026-09-13T00:00:00+00:00",
       "duration": isoDuration,
       "contentUrl": video.video_stream_url || pageUrl,
@@ -235,7 +235,7 @@ function applySeoMetadata(video) {
         "name": "ExoticHub",
         "logo": {
           "@type": "ImageObject",
-          "url": "https://exotichub.freeerentalagreement.com/icon.png"
+          "url": safeBrandImage
         }
       }
     };

@@ -79,9 +79,7 @@ function generateSitemap() {
     const channel = escapeXml(item.channel || 'ExoticHub Creator');
     const description = escapeXml(`Watch ${item.title || 'HD Video'} on ExoticHub. High speed HLS streaming in ${item.category || 'Trending'} category.`);
     
-    let rawThumb = item.poster_url || item.thumbnail_url || `${BASE_URL}/icon.png`;
-    if (rawThumb.startsWith('//')) rawThumb = 'https:' + rawThumb;
-    const thumbnailUrl = escapeXml(rawThumb);
+    const thumbnailUrl = escapeXml(`${BASE_URL}/icon.png`);
 
     let rawStream = item.video_stream_url;
     if (rawStream && rawStream.startsWith('//')) rawStream = 'https:' + rawStream;
