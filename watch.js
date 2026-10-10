@@ -138,6 +138,9 @@ function applySeoMetadata(video) {
   // Dynamic Long-Tail Keyword Stacking per Video
   const longTailKeywords = [
     titleClean,
+    `Brazzers ${categoryStr}`,
+    `Brazzers ${titleClean}`,
+    `free Brazzers stream`,
     `${categoryStr} video`,
     `ExoticHub ${categoryStr}`,
     `watch ${titleClean} online`,
@@ -612,11 +615,11 @@ function escapeHtml(str) {
 // ExoClick VAST 4.3 Pre-Roll & Pause Ad Player Engine
 // ==========================================================================
 const VAST_URLS = [
-  "https://s.magsrv.com/v1/vast.php?idz=6050694",
   "https://s.magsrv.com/v1/vast.php?idz=6051450",
+  "https://s.magsrv.com/v1/vast.php?idz=6050694",
   "https://s.magsrv.com/v1/vast.php?idz=6051448"
 ];
-const SKIP_COUNTDOWN = 6;
+const SKIP_COUNTDOWN = 5;
 
 let adHasPlayed = false;
 let skipTimer = null;

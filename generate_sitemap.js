@@ -41,7 +41,7 @@ function generateSitemap() {
   console.log(`Processing ${catalog.length} videos into Google Video Sitemap...`);
 
   const categories = [
-    'Indian', 'Desi', 'Mom', 'Anal', 'Latina', 'Interracial', 'Amateur',
+    'Brazzers', 'Indian', 'Desi', 'Mom', 'Anal', 'Latina', 'Interracial', 'Amateur',
     'Blowjob', 'Big Tits', 'Asian', 'MILF', 'Mature', 'Creampie', 'POV',
     'Group', 'Hardcore', 'Teen', 'Threesome', 'Solo', 'Lesbian', 'Blonde', 'Brunette'
   ];

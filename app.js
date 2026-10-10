@@ -208,27 +208,26 @@ function checkAutoShuffleTimers() {
   }
 }
 
-/**
- * Render Current Page Video Grid & Pagination
- */
-function renderCurrentPage() {
-  if (videoCountBadge) {
-    videoCountBadge.textContent = `${filteredVideos.length.toLocaleString()} Videos Available`;
+let displayCount = 24;
+let isInfiniteLoading = false;
+let infiniteObserver = null;
+
+const NATIVE_INFEED_ADS = [
+  {
+    title: "🔥 Brazzers HD Full Length Scenes & Exclusive Stream",
+    channel: "Brazzers Network",
+    views: 2890000,
+    duration: "24:15",
+    thumbnail: "https://images.unsplash.com/photo-1536440136628-849c177e76a1?w=500&q=80"
+  },
+  {
+    title: "⭐ Top ExoticHub & Brazzers Original HD Collection",
+    channel: "ExoticHub Featured",
+    views: 1940000,
+    duration: "18:40",
+    thumbnail: "https://images.unsplash.com/photo-1517604931442-7e0c8ed2963c?w=500&q=80"
   }
-
-  if (filteredVideos.length === 0) {
-    if (emptyState) emptyState.classList.remove('hidden');
-    if (videoGrid) videoGrid.innerHTML = '';
-    if (paginationWrapper) paginationWrapper.classList.add('hidden');
-    return;
-  }
-
-  if (emptyState) emptyState.classList.add('hidden');
-  if (paginationWrapper) paginationWrapper.classList.remove('hidden');
-
-  const start = (currentPage - 1) * itemsPerPage;
-  const end = start + itemsPerPage;
-  const pageVideos = filteredVideos.slice(start, end);
+];
 
 /**
  * Background Pre-Fetch Helper for Instant Playback
@@ -240,15 +239,35 @@ function prefetchStream(video) {
     .then(data => {
       if (data && data.success && data.stream_url) {
         sessionStorage.setItem('fresh_stream_' + video.id, data.stream_url);
-        console.log('⚡ Background pre-fetched stream URL for video:', video.id);
       }
     })
     .catch(() => {});
 }
 
+/**
+ * Render Video Grid with Infinite Scroll & In-Feed Native Ads
+ */
+function renderCurrentPage() {
+  if (filteredVideos.length === 0) {
+    if (emptyState) emptyState.classList.remove('hidden');
+    if (videoGrid) videoGrid.innerHTML = '';
+    const sentinel = document.getElementById('infiniteScrollSentinel');
+    if (sentinel) sentinel.style.display = 'none';
+    return;
+  }
+
+  if (emptyState) emptyState.classList.add('hidden');
+  const sentinel = document.getElementById('infiniteScrollSentinel');
+  if (sentinel) {
+    sentinel.style.display = displayCount >= filteredVideos.length ? 'none' : 'flex';
+  }
+
+  const visibleVideos = filteredVideos.slice(0, displayCount);
+
   if (videoGrid) {
     videoGrid.innerHTML = '';
-    pageVideos.forEach(video => {
+    visibleVideos.forEach((video, idx) => {
+      // Create Organic Video Card
       const card = document.createElement('article');
       card.className = 'video-card';
       card.innerHTML = `
@@ -271,59 +290,72 @@ function prefetchStream(video) {
       `;
 
       card.onmouseenter = () => prefetchStream(video);
-
       card.onclick = () => {
         prefetchStream(video);
         window.location.href = `watch.html?id=${encodeURIComponent(video.id)}`;
       };
 
       videoGrid.appendChild(card);
+
+      // Insert Native In-Feed Ad Card after every 8th video card
+      if ((idx + 1) % 8 === 0) {
+        const adData = NATIVE_INFEED_ADS[(Math.floor(idx / 8)) % NATIVE_INFEED_ADS.length];
+        const adCard = document.createElement('article');
+        adCard.className = 'video-card native-infeed-ad-card';
+        adCard.innerHTML = `
+          <div class="thumb-container">
+            <img src="${adData.thumbnail}" alt="${escapeHtml(adData.title)}" loading="lazy">
+            <span class="badge-duration" style="background: linear-gradient(135deg, #ff007f, #7928ca); color: #fff; font-weight: 700;">🔥 SPONSORED HD</span>
+            <div class="play-overlay">
+              <div class="play-icon-btn" style="background: var(--accent-primary);">
+                <i class="fa-solid fa-play"></i>
+              </div>
+            </div>
+          </div>
+          <div class="card-content">
+            <h3 class="card-title" style="color: #fff;">${escapeHtml(adData.title)}</h3>
+            <div class="card-meta">
+              <span class="card-channel" style="color: var(--accent-primary);"><i class="fa-solid fa-star"></i> ${escapeHtml(adData.channel)}</span>
+              <span class="card-views"><i class="fa-regular fa-eye"></i> ${formatViews(adData.views)}</span>
+            </div>
+          </div>
+        `;
+
+        adCard.onclick = () => {
+          window.open('https://s.magsrv.com/v1/vast.php?idz=6051416', '_blank');
+        };
+
+        videoGrid.appendChild(adCard);
+      }
     });
   }
 
-  renderPagination();
+  setupInfiniteScroll();
 }
 
 /**
- * Render Pagination Navigation Buttons
+ * Setup IntersectionObserver for Infinite Scroll
  */
-function renderPagination() {
-  if (!pageNumbers) return;
-  pageNumbers.innerHTML = '';
+function setupInfiniteScroll() {
+  const sentinel = document.getElementById('infiniteScrollSentinel');
+  if (!sentinel) return;
 
-  const totalPages = Math.ceil(filteredVideos.length / itemsPerPage);
-
-  if (prevPageBtn) prevPageBtn.disabled = currentPage === 1;
-  if (nextPageBtn) nextPageBtn.disabled = currentPage === totalPages || totalPages === 0;
-
-  if (totalPages <= 1) return;
-
-  const maxButtons = 5;
-  let startPage = Math.max(1, currentPage - Math.floor(maxButtons / 2));
-  let endPage = Math.min(totalPages, startPage + maxButtons - 1);
-
-  if (endPage - startPage + 1 < maxButtons) {
-    startPage = Math.max(1, endPage - maxButtons + 1);
+  if (infiniteObserver) {
+    infiniteObserver.disconnect();
   }
 
-  for (let i = startPage; i <= endPage; i++) {
-    const btn = document.createElement('button');
-    btn.className = `page-num ${i === currentPage ? 'active' : ''}`;
-    btn.textContent = i;
-    btn.onclick = () => goToPage(i);
-    pageNumbers.appendChild(btn);
-  }
-}
+  infiniteObserver = new IntersectionObserver((entries) => {
+    if (entries[0].isIntersecting && !isInfiniteLoading && displayCount < filteredVideos.length) {
+      isInfiniteLoading = true;
+      displayCount += 24;
+      renderCurrentPage();
+      setTimeout(() => {
+        isInfiniteLoading = false;
+      }, 300);
+    }
+  }, { rootMargin: '300px' });
 
-/**
- * Navigate to specific page
- */
-function goToPage(page) {
-  currentPage = page;
-  renderCurrentPage();
-  if (catalogHeader) {
-    catalogHeader.scrollIntoView({ behavior: 'smooth', block: 'start' });
-  }
+  infiniteObserver.observe(sentinel);
 }
 
 /**
@@ -526,7 +558,7 @@ function selectCategoryByName(catName) {
     });
   }
 
-  currentPage = 1;
+  displayCount = 24;
   renderCurrentPage();
   if (catalogHeader) {
     catalogHeader.scrollIntoView({ behavior: 'smooth', block: 'start' });
@@ -568,7 +600,7 @@ function handleSearch() {
     (v.channel && v.channel.toLowerCase().includes(query))
   );
 
-  currentPage = 1;
+  displayCount = 24;
   renderCurrentPage();
 }
 
